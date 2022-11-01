@@ -79,13 +79,13 @@ class Monitor(object):
             outdB = utils.arr2dB(self.outData)
             if indB >= -3:
                 indBstr = self.red(f'{indB: ^8.1f}')
-            elif indB >= -10 and indB < -3:
+            elif indB >= -10:
                 indBstr = self.yellow(f'{indB: ^8.1f}')
             else:
                 indBstr = self.green(f'{indB: ^8.1f}')
             if outdB >= -3:
                 outdBstr = self.red(f'{outdB: ^8.1f}')
-            elif outdB >= -10 and outdB < -3:
+            elif outdB >= -10:
                 outdBstr = self.yellow(f'{outdB: ^8.1f}')
             else:
                 outdBstr = self.green(f'{outdB: ^8.1f}')
@@ -93,15 +93,15 @@ class Monitor(object):
             self.reset()
         else:
             writeIn = self.inData.shape[0] - self.counter \
-                if self.counter + frames > self.inData.shape[0] \
-                else frames
+                    if self.counter + frames > self.inData.shape[0] \
+                    else frames
             writeOut = self.outData.shape[0] - self.counter \
-                if self.counter + frames > self.outData.shape[0] \
-                else frames
+                    if self.counter + frames > self.outData.shape[0] \
+                    else frames
             self.inData[self.counter:self.counter + writeIn] = indata[:writeIn] \
-                if indata is not None else 0
+                    if indata is not None else 0
             self.outData[self.counter:self.counter + writeOut] = outdata[:writeOut] \
-                if outdata is not None else 0
+                    if outdata is not None else 0
             self.counter += frames
         return
 
@@ -172,7 +172,7 @@ class Streaming(PyTTaObj):
         if 'O' in self.IO:
             self.outChannels = outChannels
             self.playData = excitation.timeSignal[:]
-        self.dataCount = int(0)
+        self.dataCount = 0
         self.set_monitoring(monitor)
         return
 

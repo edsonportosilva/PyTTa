@@ -39,8 +39,8 @@ class RememberInstanceCreationInfo:
         self._outer_frame = frame
         self.creation_module = frame.f_globals["__name__"]
         self.creation_file, self.creation_line, self.creation_function, \
-            self.creation_text = \
-            traceback.extract_stack(frame, 1)[0]
+                self.creation_text = \
+                traceback.extract_stack(frame, 1)[0]
         self.creation_name = self.creation_text.split("=")[0].strip()
         super().__init__()
         # threading.Thread(target=self._check_existence_after_creation).start()

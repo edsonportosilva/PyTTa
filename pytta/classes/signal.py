@@ -155,10 +155,7 @@ class SignalObj(_base.PyTTaObj):
                  *args,
                  **kwargs):
         # Check if input is a complex array
-        if True in np.iscomplex(signalArray):
-            dtype = 'complex64'
-        else:
-            dtype = 'float32'
+        dtype = 'complex64' if True in np.iscomplex(signalArray) else 'float32'
         # Converting signalArray from list to np.array
         if isinstance(signalArray, list):
             signalArray = np.array(signalArray, dtype=dtype, ndmin=2).T
@@ -172,11 +169,7 @@ class SignalObj(_base.PyTTaObj):
         if signalArray.shape[1] > signalArray.shape[0]:
             signalArray = signalArray.T
 
-        if 'signalType' in kwargs:
-            signalType = kwargs.pop('signalType')
-        else:
-            signalType = 'power'
-            
+        signalType = kwargs.pop('signalType') if 'signalType' in kwargs else 'power'
         if domain == 'freq':
             if 'numSamples' in kwargs:
                 self._numSamples = kwargs.pop('numSamples')
@@ -247,23 +240,22 @@ class SignalObj(_base.PyTTaObj):
 
     @timeSignal.setter
     def timeSignal(self, newSignal):
-        if isinstance(newSignal, np.ndarray):
-            if self.size_check(newSignal) == 1:
-                newSignal = np.array(newSignal, ndmin=2, dtype='float32')
-            if newSignal.shape[1] > newSignal.shape[0]:
-                newSignal = newSignal.T
-            self._timeSignal = np.array(newSignal, dtype='float32')
-            self._numSamples = len(self._timeSignal)  # [-] number of samples
-            self._fftDegree = np.log2(self._numSamples)  # [-] size parameter
-            self._timeLength = self.numSamples/self.samplingRate  # [s]
-            self._timeVector = np.linspace(0,
-                                           self.timeLength
-                                           - 1/self.samplingRate,
-                                           self.numSamples)
-            self._fft()
-            self.channels.conform_to(self)
-        else:
+        if not isinstance(newSignal, np.ndarray):
             raise TypeError('Input array must be a numpy ndarray')
+        if self.size_check(newSignal) == 1:
+            newSignal = np.array(newSignal, ndmin=2, dtype='float32')
+        if newSignal.shape[1] > newSignal.shape[0]:
+            newSignal = newSignal.T
+        self._timeSignal = np.array(newSignal, dtype='float32')
+        self._numSamples = len(self._timeSignal)  # [-] number of samples
+        self._fftDegree = np.log2(self._numSamples)  # [-] size parameter
+        self._timeLength = self.numSamples/self.samplingRate  # [s]
+        self._timeVector = np.linspace(0,
+                                       self.timeLength
+                                       - 1/self.samplingRate,
+                                       self.numSamples)
+        self._fft()
+        self.channels.conform_to(self)
         return
 
     @property
@@ -275,53 +267,46 @@ class SignalObj(_base.PyTTaObj):
 
     @freqSignal.setter
     def freqSignal(self, newSignal):
-        if isinstance(newSignal, np.ndarray):
-            if self.size_check(newSignal) == 1:
-                newSignal = np.array(newSignal, ndmin=2)
-            if newSignal.shape[1] > newSignal.shape[0]:
-                newSignal = newSignal.T
-            # Time numSamples was provided (or is default) at init or old
-            # signal was already here. Check if numSamples calculated
-            # according to half spectra matches the current numSamples.
-            halfSpectraNumSamples = len(newSignal)
-            if (halfSpectraNumSamples-1)*2 == self._numSamples:
-                timeSignalNumSamplesIs = "EVEN"
-            elif halfSpectraNumSamples*2-1 == self._numSamples:
-                timeSignalNumSamplesIs = "ODD"
-            else:
-                # Old numSamples don't match with provided half spectrum
-                # number of samples.
-                timeSignalNumSamplesIs = "UNKNOWN"  
-                
-            if timeSignalNumSamplesIs == "UNKNOWN":
-                # Consider full spectrum has even number of samples
-                # self._numSamples = halfSpectraNumSamples*2-1  # ODD
-                self._numSamples = (halfSpectraNumSamples-1)*2  # EVEN
-            
-            self._freqSignal = np.array(newSignal, dtype='complex64')                                   
-            self._fftDegree = np.log2(self.numSamples)  # [-] size parameter
-            self._timeLength = self.numSamples/self.samplingRate
-            self._freqVector = np.fft.rfftfreq(n=self.numSamples,
-                                               d=1/self.samplingRate)
-            self._ifft()
-            self.channels.conform_to(self)
-        else:
+        if not isinstance(newSignal, np.ndarray):
             raise TypeError('Input array must be a numpy ndarray')
+        if self.size_check(newSignal) == 1:
+            newSignal = np.array(newSignal, ndmin=2)
+        if newSignal.shape[1] > newSignal.shape[0]:
+            newSignal = newSignal.T
+        # Time numSamples was provided (or is default) at init or old
+        # signal was already here. Check if numSamples calculated
+        # according to half spectra matches the current numSamples.
+        halfSpectraNumSamples = len(newSignal)
+        if (halfSpectraNumSamples-1)*2 == self._numSamples:
+            timeSignalNumSamplesIs = "EVEN"
+        elif halfSpectraNumSamples*2-1 == self._numSamples:
+            timeSignalNumSamplesIs = "ODD"
+        else:
+            # Old numSamples don't match with provided half spectrum
+            # number of samples.
+            timeSignalNumSamplesIs = "UNKNOWN"  
+
+        if timeSignalNumSamplesIs == "UNKNOWN":
+            # Consider full spectrum has even number of samples
+            # self._numSamples = halfSpectraNumSamples*2-1  # ODD
+            self._numSamples = (halfSpectraNumSamples-1)*2  # EVEN
+
+        self._freqSignal = np.array(newSignal, dtype='complex64')
+        self._fftDegree = np.log2(self.numSamples)  # [-] size parameter
+        self._timeLength = self.numSamples/self.samplingRate
+        self._freqVector = np.fft.rfftfreq(n=self.numSamples,
+                                           d=1/self.samplingRate)
+        self._ifft()
+        self.channels.conform_to(self)
         return
 
     @property
     def coordinates(self):
-        coords = []
-        for chNum in self.channels.mapping:
-            coords.append(self.channels[chNum].coordinates)
-        return coords
+        return [self.channels[chNum].coordinates for chNum in self.channels.mapping]
 
     @property
     def orientation(self):
-        orientations = []
-        for chNum in self.channels.mapping:
-            orientations.append(self.channels[chNum].orientation)
-        return orientations
+        return [self.channels[chNum].orientation for chNum in self.channels.mapping]
 
     @property
     def numChannels(self):
@@ -360,7 +345,7 @@ class SignalObj(_base.PyTTaObj):
         
         if channels is None:
             channels = self.channels.mapping
-            
+
         else:
             treta = False
             inexistantChs = []
@@ -369,15 +354,13 @@ class SignalObj(_base.PyTTaObj):
                     treta = True
                     inexistantChs.append(chNum)
             if treta:
-                raise IndexError("Channel number(s) " + str(inexistantChs) +
-                                 " don't exist.")
-        
+                raise IndexError((f"Channel number(s) {inexistantChs}" + " don't exist."))
+
         indexes = [self.channels.mapping.index(chNum) for chNum in channels]
-            
+
         spltdChs = []
-        
-        idx = 0;
-        for chNum in channels:
+
+        for idx, chNum in enumerate(channels):
             newSignal = SignalObj(self.timeSignal[:,indexes[idx]],
                                   domain='time',
                                   samplingRate=self.samplingRate,
@@ -385,11 +368,9 @@ class SignalObj(_base.PyTTaObj):
                                   freqMax=self.freqMax,
                                   comment=self.comment)
             newSignal.channels[1] = self.channels[chNum]
-            
+
             spltdChs.append(newSignal)
-            
-            idx += 1
-                    
+
         return spltdChs
 
     def crop(self, startTime, endTime):
@@ -484,7 +465,7 @@ class SignalObj(_base.PyTTaObj):
         """
         if channels is None:
             channels = self.channels.mapping
-            
+
         else:
             treta = False
             inexistantChs = []
@@ -493,30 +474,31 @@ class SignalObj(_base.PyTTaObj):
                     treta = True
                     inexistantChs.append(chNum)
             if treta:
-                raise IndexError("SignalObj channel number(s) " +
-                                 str(inexistantChs) +
-                                 " don't exist.")
-        
+                raise IndexError(
+                    f"SignalObj channel number(s) {inexistantChs}"
+                    + " don't exist."
+                )
+
+
         indexes = [self.channels.mapping.index(chNum) for chNum in channels]
-        
+
         timeSignalSel = self.timeSignal[:,indexes[0]]
-        
+
         if len(channels) > 1: 
             for idx in indexes[1:]:
                 timeSignalSel = np.vstack((timeSignalSel,
                                            self.timeSignal[:,idx]))
-        
-        timeSignalSel = timeSignalSel.T
-        
+
         if mapping is None:
             if self.numChannels <= 1:
                 mapping = default.outChannel
-            elif self.numChannels > 1:
+            else:
                 mapping = np.arange(1, self.numChannels+1)
-                
+
+        timeSignalSel = timeSignalSel.T
         sd.play(timeSignalSel, self.samplingRate,
                 mapping=mapping, **kwargs)
-        
+
         return
 
     def plot_time(self, xLabel:str=None, yLabel:str=None,
@@ -564,28 +546,22 @@ class SignalObj(_base.PyTTaObj):
         """
         if xLabel is not None:
             self.timeXLabel = xLabel
-        else:
-            if hasattr(self, 'timeXLabel'):
-                if self.timeXLabel is not None:
-                    xLabel = self.timeXLabel
+        elif hasattr(self, 'timeXLabel') and self.timeXLabel is not None:
+            xLabel = self.timeXLabel
 
         if yLabel is not None:
             self.timeYLabel = yLabel
-        else:
-            if hasattr(self, 'timeYLabel'):
-                if self.timeYLabel is not None:
-                    yLabel = self.timeYLabel
+        elif hasattr(self, 'timeYLabel') and self.timeYLabel is not None:
+            yLabel = self.timeYLabel
 
         if title is not None:
             self.timeTitle = title
-        else:
-            if hasattr(self, 'timeTitle'):
-                if self.timeTitle is not None:
-                    title = self.timeTitle
+        elif hasattr(self, 'timeTitle') and self.timeTitle is not None:
+            title = self.timeTitle
 
-        fig = plot.time((self,), xLabel, yLabel, yLim, xLim, title, decimalSep,
-                        timeUnit)
-        return fig
+        return plot.time(
+            (self,), xLabel, yLabel, yLim, xLim, title, decimalSep, timeUnit
+        )
 
     def plot_time_dB(self, xLabel:str=None, yLabel:str=None,
                 yLim:list=None, xLim:list=None, title:str=None,
@@ -632,28 +608,22 @@ class SignalObj(_base.PyTTaObj):
         """
         if xLabel is not None:
             self.timedBXLabel = xLabel
-        else:
-            if hasattr(self, 'timedBXLabel'):
-                if self.timedBXLabel is not None:
-                    xLabel = self.timedBXLabel
+        elif hasattr(self, 'timedBXLabel') and self.timedBXLabel is not None:
+            xLabel = self.timedBXLabel
 
         if yLabel is not None:
             self.timedBYLabel = yLabel
-        else:
-            if hasattr(self, 'timedBYLabel'):
-                if self.timedBYLabel is not None:
-                    yLabel = self.timedBYLabel
+        elif hasattr(self, 'timedBYLabel') and self.timedBYLabel is not None:
+            yLabel = self.timedBYLabel
 
         if title is not None:
             self.timedBTitle = title
-        else:
-            if hasattr(self, 'timedBTitle'):
-                if self.timedBTitle is not None:
-                    title = self.timedBTitle
+        elif hasattr(self, 'timedBTitle') and self.timedBTitle is not None:
+            title = self.timedBTitle
 
-        fig = plot.time_dB((self,), xLabel, yLabel, yLim, xLim, title,
-                           decimalSep, timeUnit)
-        return fig
+        return plot.time_dB(
+            (self,), xLabel, yLabel, yLim, xLim, title, decimalSep, timeUnit
+        )
 
     def plot_freq(self, smooth:bool=False, xLabel:str=None, yLabel:str=None,
                   yLim:list=None, xLim:list=None, title:str=None,
@@ -700,28 +670,22 @@ class SignalObj(_base.PyTTaObj):
         """
         if xLabel is not None:
             self.freqXLabel = xLabel
-        else:
-            if hasattr(self, 'freqXLabel'):
-                if self.freqXLabel is not None:
-                    xLabel = self.freqXLabel
+        elif hasattr(self, 'freqXLabel') and self.freqXLabel is not None:
+            xLabel = self.freqXLabel
 
         if yLabel is not None:
             self.freqYLabel = yLabel
-        else:
-            if hasattr(self, 'freqYLabel'):
-                if self.freqYLabel is not None:
-                    yLabel = self.freqYLabel
+        elif hasattr(self, 'freqYLabel') and self.freqYLabel is not None:
+            yLabel = self.freqYLabel
 
         if title is not None:
             self.freqTitle = title
-        else:
-            if hasattr(self, 'freqTitle'):
-                if self.freqTitle is not None:
-                    title = self.freqTitle
+        elif hasattr(self, 'freqTitle') and self.freqTitle is not None:
+            title = self.freqTitle
 
-        fig = plot.freq((self,), smooth, xLabel, yLabel, yLim, xLim, title,
-                        decimalSep)
-        return fig
+        return plot.freq(
+            (self,), smooth, xLabel, yLabel, yLim, xLim, title, decimalSep
+        )
 
     def plot_spectrogram(self, winType:str='hann', winSize:int=1024,
                          overlap:float=0.5, xLabel:str=None, yLabel:str=None,
@@ -774,29 +738,37 @@ class SignalObj(_base.PyTTaObj):
         """
         if xLabel is not None:
             self.spectrogramXLabel = xLabel
-        else:
-            if hasattr(self, 'spectrogramXLabel'):
-                if self.spectrogramXLabel is not None:
-                    xLabel = self.spectrogramXLabel
+        elif (
+            hasattr(self, 'spectrogramXLabel')
+            and self.spectrogramXLabel is not None
+        ):
+            xLabel = self.spectrogramXLabel
 
         if yLabel is not None:
             self.spectrogramYLabel = yLabel
-        else:
-            if hasattr(self, 'spectrogramYLabel'):
-                if self.spectrogramYLabel is not None:
-                    yLabel = self.spectrogramYLabel
+        elif (
+            hasattr(self, 'spectrogramYLabel')
+            and self.spectrogramYLabel is not None
+        ):
+            yLabel = self.spectrogramYLabel
 
         if title is not None:
             self.spectrogramTitle = title
-        else:
-            if hasattr(self, 'spectrogramTitle'):
-                if self.spectrogramTitle is not None:
-                    title = self.spectrogramTitle
+        elif hasattr(self, 'spectrogramTitle') and self.spectrogramTitle is not None:
+            title = self.spectrogramTitle
 
-        figs = plot.spectrogram((self,), winType, winSize,
-                                overlap, xLabel, yLabel, xLim, yLim,
-                                title, decimalSep)
-        return figs
+        return plot.spectrogram(
+            (self,),
+            winType,
+            winSize,
+            overlap,
+            xLabel,
+            yLabel,
+            xLim,
+            yLim,
+            title,
+            decimalSep,
+        )
 
     def calib_voltage(self, chIndex, refSignalObj, refVrms=1, refFreq=1000):
         """
@@ -825,7 +797,7 @@ class SignalObj(_base.PyTTaObj):
             chNum = self.channels.mapping[chIndex]
             self.channels[chNum].calib_volt(refSignalObj, refVrms, refFreq)
             self.timeSignal[:, chIndex] = self.timeSignal[:, chIndex]\
-                * self.channels[chNum].CF
+                    * self.channels[chNum].CF
             self.channels[chNum].calibCheck = True
             self._fft()
         else:
@@ -862,7 +834,7 @@ class SignalObj(_base.PyTTaObj):
             chNum = self.channels.mapping[chIndex]
             self.channels[chNum].calib_press(refSignalObj, refPrms, refFreq)
             self.timeSignal[:, chIndex] = self.timeSignal[:, chIndex]\
-                * self.channels[chNum].CF
+                    * self.channels[chNum].CF
             self.channels[chNum].calibCheck = True
             self._fft()
         else:
@@ -877,7 +849,7 @@ class SignalObj(_base.PyTTaObj):
 
     def pytta_save(self, dirname=time.ctime(time.time())):
         mySigObj = self._to_dict()
-        with zipfile.ZipFile(dirname + '.pytta', 'w') as zdir:
+        with zipfile.ZipFile(f'{dirname}.pytta', 'w') as zdir:
             filename = 'timeSignal.mat'
             with open(filename, 'wb+'):
                 sio.savemat(filename, mySigObj['timeSignalAddress'],
@@ -891,7 +863,7 @@ class SignalObj(_base.PyTTaObj):
                 json.dump(mySigObj, f, indent=4)
             zdir.write(filename, compress_type=zipfile.ZIP_DEFLATED)
             os.remove(filename)
-        return dirname + '.pytta'
+        return f'{dirname}.pytta'
 
     def _h5_save(self, h5group):
         """
@@ -903,7 +875,6 @@ class SignalObj(_base.PyTTaObj):
         h5group.attrs['signalType'] = _h5.attr_parser(self.signalType)
         h5group['timeSignal'] = self.timeSignal
         super()._h5_save(h5group)
-        pass
 
     def __truediv__(self, other):
         """
@@ -932,22 +903,22 @@ class SignalObj(_base.PyTTaObj):
                                                 dtype=np.complex_)
                     for channel in range(other.numChannels):
                         result_freqSignal[:, channel] = \
-                            currentFreqSignal[:, channel] \
-                            / otherFreqSignal[:, channel]
+                                currentFreqSignal[:, channel] \
+                                / otherFreqSignal[:, channel]
                 else:
                     result_freqSignal = np.zeros(self.freqSignal.shape,
                                                 dtype=np.complex_)
                     for channel in range(self.numChannels):
                         result_freqSignal[:, channel] = \
-                            currentFreqSignal[:, channel] \
-                            / otherFreqSignal[:, 0]
+                                currentFreqSignal[:, channel] \
+                                / otherFreqSignal[:, 0]
             else:
                 result_freqSignal = currentFreqSignal / otherFreqSignal
             result_freqSignal[np.isinf(result_freqSignal)] = 0
             result_freqSignal[np.isnan(result_freqSignal)] = 0
             result.freqSignal = _make_rms_spectra(result_freqSignal)
             result.channels = self.channels / other.channels
-        elif type(other) == float or type(other) == int:
+        elif type(other) in [float, int]:
             result = SignalObj(np.zeros(self.timeSignal.shape),
                                samplingRate=cp.copy(self.samplingRate),
                                freqMin=cp.copy(self.freqMin),
@@ -989,21 +960,21 @@ class SignalObj(_base.PyTTaObj):
                                                 dtype=np.complex_)
                     for channel in range(other.numChannels):
                         result_freqSignal[:, channel] = \
-                            currentFreqSignal[:, channel] \
-                            * otherFreqSignal[:, channel]
+                                currentFreqSignal[:, channel] \
+                                * otherFreqSignal[:, channel]
                 else:
                     result_freqSignal = np.zeros(self.freqSignal.shape,
                                                 dtype=np.complex_)
                     for channel in range(self.numChannels):
                         result_freqSignal[:, channel] = \
-                            currentFreqSignal[:, channel] \
-                            * otherFreqSignal[:, 0]
+                                currentFreqSignal[:, channel] \
+                                * otherFreqSignal[:, 0]
             else:
                 result_freqSignal = currentFreqSignal * otherFreqSignal
             result_freqSignal[np.isinf(result_freqSignal)] = 0
             result.freqSignal = _make_rms_spectra(result_freqSignal)
             result.channels = self.channels * other.channels
-        elif type(other) == float or type(other) == int:
+        elif type(other) in [float, int]:
             result = SignalObj(np.zeros(self.timeSignal.shape),
                             samplingRate=cp.copy(self.samplingRate),
                             freqMin=cp.copy(self.freqMin),
@@ -1040,11 +1011,11 @@ class SignalObj(_base.PyTTaObj):
                                         the same number of channels.")
                     for channel in range(other.numChannels):
                         result.timeSignal = self._timeSignal[:, channel]\
-                            + other._timeSignal[:, channel]
+                                + other._timeSignal[:, channel]
                 else:
                     for channel in range(other.numChannels):
                         result.timeSignal = self._timeSignal[:, channel]\
-                            + other._timeSignal
+                                + other._timeSignal
             else:
                 result.timeSignal = self._timeSignal + other._timeSignal
         elif isinstance(other, (float, int)):
@@ -1079,11 +1050,11 @@ class SignalObj(_base.PyTTaObj):
                                      the same number of channels.")
                 for channel in range(other.numChannels):
                     result.timeSignal = self._timeSignal[:, channel]\
-                        - other._timeSignal[:, channel]
+                            - other._timeSignal[:, channel]
             else:
                 for channel in range(other.numChannels):
                     result.timeSignal = self._timeSignal[:, channel]\
-                        - other._timeSignal
+                            - other._timeSignal
         else:
             result.timeSignal = self._timeSignal - other._timeSignal
         return result
@@ -1132,14 +1103,14 @@ class SignalObj(_base.PyTTaObj):
         # spectrum denormalization
         if self.signalType == 'power':
             adjustedFreqSignal = \
-                self._freqSignal*len(self._freqSignal)
+                    self._freqSignal*len(self._freqSignal)
         else:
             adjustedFreqSignal = self._freqSignal
         # turning RMS amplitude into peak amplitude except DC freq
         adjustedFreqSignal = _make_pk_spectra(adjustedFreqSignal)
         # IFFT
         self._timeSignal = \
-            np.array(np.fft.irfft(adjustedFreqSignal,
+                np.array(np.fft.irfft(adjustedFreqSignal,
                                   n=self.numSamples, axis=0, norm=None),
                     dtype='float32')
         # time vector (x axis)
@@ -1283,18 +1254,18 @@ class ImpulsiveResponse(_base.PyTTaObj):
                 excitSig = excitation.timeSignal
                 recSig = recording.timeSignal
                 newTimeSignal = \
-                    np.zeros((excitSig.shape[0], recSig.shape[1]))
+                        np.zeros((excitSig.shape[0], recSig.shape[1]))
                 newTimeSignal[:recSig.shape[0], :recSig.shape[1]] = \
-                    recSig
+                        recSig
                 recording.timeSignal = newTimeSignal
             elif excitation.numSamples < recording.numSamples:
                 print("Zero padding on IR calculation!")
                 excitSig = excitation.timeSignal
                 recSig = recording.timeSignal
                 newTimeSignal = \
-                    np.zeros((recSig.shape[0], excitSig.shape[1]))
+                        np.zeros((recSig.shape[0], excitSig.shape[1]))
                 newTimeSignal[:excitSig.shape[0], :excitSig.shape[1]] = \
-                    excitSig
+                        excitSig
                 excitation.timeSignal = newTimeSignal
             self._methodInfo = {'method': method, 'winType': winType,
                                 'winSize': winSize, 'overlap': overlap}
@@ -1323,7 +1294,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
     # Methods
 
     def pytta_save(self, dirname=time.ctime(time.time())):
-        with zipfile.ZipFile(dirname + '.pytta', 'w') as zdir:
+        with zipfile.ZipFile(f'{dirname}.pytta', 'w') as zdir:
             ir = self.systemSignal.pytta_save('ir')
             zdir.write(ir)
             os.remove(ir)
@@ -1333,7 +1304,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                 json.dump(out, f, indent=4)
             zdir.write('ImpulsiveResponse.json')
             os.remove('ImpulsiveResponse.json')
-        return dirname + '.pytta'
+        return f'{dirname}.pytta'
 
     def _h5_save(self, h5group):
         """
@@ -1346,7 +1317,6 @@ class ImpulsiveResponse(_base.PyTTaObj):
         h5group.attrs['winSize'] = _h5.none_parser(self.methodInfo['winSize'])
         h5group.attrs['overlap'] = _h5.none_parser(self.methodInfo['overlap'])
         self.systemSignal._h5_save(h5group.create_group('systemSignal'))
-        pass
 
     def plot_time(self, *args, **kwargs):
         return self.systemSignal.plot_time(*args, **kwargs)
@@ -1386,8 +1356,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
     # Private methods
 
     def _to_dict(self):
-        out = {'methodInfo': self.methodInfo}
-        return out
+        return {'methodInfo': self.methodInfo}
 
     def _calculate_tf_ir(self, inputSignal, outputSignal, method='linear',
                          winType=None, winSize=None, overlap=None,
@@ -1419,11 +1388,11 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                                     maxFreq*np.sqrt(2)],
                                                     freqVector)
                 eps = \
-                    eps \
-                        * float(np.max(np.abs(outputFreqSignal)))**2 \
-                            * 1/2
+                        eps \
+                            * float(np.max(np.abs(outputFreqSignal)))**2 \
+                                * 1/2
                 C = np.conj(data) / \
-                    (np.conj(data)*data + eps)
+                        (np.conj(data)*data + eps)
                 C = _make_rms_spectra(C)
                 C = SignalObj(C,
                               'freq',
@@ -1448,7 +1417,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
             if outputSignal.numChannels > 1:
                 if inputSignal.numChannels > 1:
                     if inputSignal.numChannels\
-                            != outputSignal.numChannels:
+                                != outputSignal.numChannels:
                         raise ValueError("Both signal-like objects must have\
                                          the same number of channels.")
                     for channel in range(outputSignal.numChannels):
@@ -1458,7 +1427,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                 inputSignal.samplingRate,
                                 winType, winSize, winSize*overlap)
                         result.freqSignal[:, channel] \
-                            = np.array(XY/XX, ndmin=2).T
+                                = np.array(XY/XX, ndmin=2).T
                 else:
                     for channel in range(outputSignal.numChannels):
                         XY, XX = self._calc_csd_tf(
@@ -1467,7 +1436,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                 inputSignal.samplingRate,
                                 winType, winSize, winSize*overlap)
                         result.freqSignal[:, channel] \
-                            = np.array(XY/XX, ndmin=2).T
+                                = np.array(XY/XX, ndmin=2).T
             else:
                 XY, XX = self._calc_csd_tf(
                         inputSignal.timeSignal,
@@ -1489,7 +1458,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
             if outputSignal.numChannels > 1:
                 if inputSignal.numChannels > 1:
                     if inputSignal.numChannels\
-                            != outputSignal.numChannels:
+                                != outputSignal.numChannels:
                         raise ValueError("Both signal-like objects must have\
                                          the same number of channels.")
                     for channel in range(outputSignal.numChannels):
@@ -1499,7 +1468,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                 inputSignal.samplingRate,
                                 winType, winSize, winSize*overlap)
                         result.freqSignal[:, channel] \
-                            = np.array(YY/YX, ndmin=2).T
+                                = np.array(YY/YX, ndmin=2).T
                 else:
                     YX, YY = self._calc_csd_tf(
                             outputSignal.timeSignal[:, channel],
@@ -1507,7 +1476,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                             inputSignal.samplingRate,
                             winType, winSize, winSize*overlap)
                     result.freqSignal[:, channel] \
-                        = np.array(YY/YX, ndmin=2).T
+                            = np.array(YY/YX, ndmin=2).T
             else:
                 YX, YY = self._calc_csd_tf(
                         outputSignal.timeSignal,
@@ -1529,7 +1498,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
             if outputSignal.numChannels > 1:
                 if inputSignal.numChannels > 1:
                     if inputSignal.numChannels\
-                            != outputSignal.numChannels:
+                                != outputSignal.numChannels:
                         raise ValueError("Both signal-like objects must have\
                                          the same number of channels.")
                     for channel in range(outputSignal.numChannels):
@@ -1544,7 +1513,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                 inputSignal.samplingRate,
                                 winType, winSize, winSize*overlap)
                         result.freqSignal[:, channel] \
-                            = (YY - XX + np.sqrt(
+                                = (YY - XX + np.sqrt(
                                     (XX-YY)**2 + 4*np.abs(XY)**2)) / 2*YX
 
                 else:
@@ -1559,7 +1528,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                             inputSignal.samplingRate,
                             winType, winSize, winSize*overlap)
                     result.freqSignal[:, channel]\
-                        = (YY - XX + np.sqrt(
+                            = (YY - XX + np.sqrt(
                                 (XX-YY)**2 + 4*np.abs(XY)**2)) / 2*YX
             else:
                 XY, XX = self._calc_csd_tf(
@@ -1594,7 +1563,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
                                        rightWin,
                                        np.zeros(totalSamples-len(rightWin)-f0idx)))
 
-        leftWin = win[0:xsamples]
+        leftWin = win[:xsamples]
         fullLeftWin = np.concatenate((np.zeros(f0idx),
                                        leftWin,
                                        np.ones(totalSamples-len(leftWin)-f0idx)))
@@ -1609,9 +1578,7 @@ class ImpulsiveResponse(_base.PyTTaObj):
         a = aFreqSignal
         b = bFreqSignal
 
-        result = a + b
-
-        return result
+        return a + b
 
     def _calc_csd_tf(self, sig1, sig2, samplingRate, windowName,
                      numberOfSamples, overlapSamples):

@@ -110,26 +110,28 @@ def read_wav(fileName):
         data = data/(2**15)
     if data.dtype == 'int32':
         data = data/(2**31)
-    signal = SignalObj(data, 'time', samplingRate=samplingRate)
-    return signal
+    return SignalObj(data, 'time', samplingRate=samplingRate)
 
 
 def write_wav(fileName, signalIn):
     """Write a SignalObj into a single wave file."""
     samplingRate = signalIn.samplingRate
     data = signalIn.timeSignal
-    return wf.write(fileName if '.wav' in fileName else fileName+'.wav', samplingRate, data)
+    return wf.write(
+        fileName if '.wav' in fileName else f'{fileName}.wav',
+        samplingRate,
+        data,
+    )
 
 
 def merge(signal1, *signalObjects):
     """Gather all channels of the signalObjs given as input arguments into a single SignalObj."""
-    j = 1
     freqMin = cp.deepcopy(signal1.freqMin)
     freqMax = cp.deepcopy(signal1.freqMax)
     comment = cp.deepcopy(signal1.comment)
     channels = cp.deepcopy(signal1.channels)
     timeSignal = cp.deepcopy(signal1.timeSignal)
-    for inObj in signalObjects:
+    for j, inObj in enumerate(signalObjects, start=1):
         if signal1.samplingRate != inObj.samplingRate:
             message = '\
             \n To merge signals they must have the same sampling rate!\
@@ -140,11 +142,10 @@ def merge(signal1, *signalObjects):
             \n To merge signals they must have the same length!\
             \n SignalObj 1 and '+str(j+1)+' have different lengths.'
             raise AttributeError(message)
-        comment = comment + ' / ' + inObj.comment
+        comment = f'{comment} / {inObj.comment}'
         for ch in inObj.channels._channels:
             channels.append(ch)
         timeSignal = np.hstack((timeSignal, inObj.timeSignal))
-        j += 1
     newSignal = SignalObj(timeSignal, domain='time',
                           samplingRate=signal1.samplingRate,
                           freqMin=freqMin, freqMax=freqMax, comment=comment)
@@ -194,8 +195,7 @@ def fft_convolve(signal1, signal2):
     """
 #    Fs = signal1.Fs
     conv = ss.fftconvolve(signal1.timeSignal, signal2.timeSignal)
-    signal = SignalObj(conv, 'time', signal1.samplingRate)
-    return signal
+    return SignalObj(conv, 'time', signal1.samplingRate)
 
 
 def find_delay(signal1, signal2):
@@ -209,14 +209,11 @@ def find_delay(signal1, signal2):
     """
     if signal1.N != signal2.N:
         return print('Signal1 and Signal2 must have the same length')
-    else:
-        freqSignal1 = signal1.freqSignal
-        freqSignal2 = sfft.fft(np.flipud(signal2.timeSignal))
-        convoluted = np.real(sfft.ifft(freqSignal1 * freqSignal2))
-        convShifted = sfft.fftshift(convoluted)
-        zeroIndex = int(signal1.numSamples / 2) - 1
-        shift = zeroIndex - np.argmax(convShifted)
-    return shift
+    freqSignal1 = signal1.freqSignal
+    freqSignal2 = sfft.fft(np.flipud(signal2.timeSignal))
+    convoluted = np.real(sfft.ifft(freqSignal1 * freqSignal2))
+    convShifted = sfft.fftshift(convoluted)
+    return int(signal1.numSamples / 2) - 1 - np.argmax(convShifted)
 
 
 def corr_coef(signal1, signal2):
@@ -232,8 +229,7 @@ def resample(signal, newSamplingRate):
     """
     newSignalSize = np.int(signal.timeLength*newSamplingRate)
     resampled = ss.resample(signal.timeSignal[:], newSignalSize)
-    newSignal = SignalObj(resampled, "time", newSamplingRate)
-    return newSignal
+    return SignalObj(resampled, "time", newSamplingRate)
 
 
 def peak_time(signal):
@@ -248,10 +244,7 @@ def peak_time(signal):
         maxindex = np.where(signal.timeSignal[:, chindex] == np.abs(maxamp))[0]
         maxtime = signal.timeVector[maxindex][0]
         peaks_time.append(maxtime)
-    if signal.numChannels > 1:
-        return peaks_time
-    else:
-        return peaks_time[0]
+    return peaks_time if signal.numChannels > 1 else peaks_time[0]
 
 def fft_degree(*args,**kwargs):
     """
@@ -331,9 +324,17 @@ def plot_time(*sigObjs, xLabel:str=None, yLabel:str=None, yLim:list=None,
     """
     realSigObjs = _remove_non_(SignalObj, sigObjs, msgPrefix='plot_time:')
     if len(realSigObjs) > 0:
-        fig = plot.time(realSigObjs, xLabel, yLabel, yLim, xLim, title,
-                        decimalSep, timeUnit)
-        return fig
+        return plot.time(
+            realSigObjs,
+            xLabel,
+            yLabel,
+            yLim,
+            xLim,
+            title,
+            decimalSep,
+            timeUnit,
+        )
+
     else:
         return
 
@@ -384,9 +385,17 @@ def plot_time_dB(*sigObjs, xLabel:str=None, yLabel:str=None, yLim:list=None,
     realSigObjs = \
         _remove_non_(SignalObj, sigObjs, msgPrefix='plot_time_dB:')
     if len(realSigObjs) > 0:
-        fig = plot.time_dB(realSigObjs, xLabel, yLabel, yLim, xLim, title,
-                           decimalSep, timeUnit)
-        return fig
+        return plot.time_dB(
+            realSigObjs,
+            xLabel,
+            yLabel,
+            yLim,
+            xLim,
+            title,
+            decimalSep,
+            timeUnit,
+        )
+
     else:
         return
 
@@ -434,9 +443,10 @@ def plot_freq(*sigObjs, smooth:bool=False, xLabel:str=None, yLabel:str=None,
     realSigObjs = \
         _remove_non_(SignalObj, sigObjs, msgPrefix='plot_freq:')
     if len(realSigObjs) > 0:
-        fig = plot.freq(realSigObjs, smooth, xLabel, yLabel, yLim, xLim, title,
-                        decimalSep)
-        return fig
+        return plot.freq(
+            realSigObjs, smooth, xLabel, yLabel, yLim, xLim, title, decimalSep
+        )
+
     else:
         return
 
@@ -502,10 +512,21 @@ def plot_bars(*analyses, xLabel:str=None, yLabel:str=None,
 
     analyses = _remove_non_(Analysis, analyses, msgPrefix='plot_bars:')
     if len(analyses) > 0:
-        fig = plot.bars(analyses, xLabel, yLabel, yLim, xLim, title,
-            decimalSep, barWidth, errorStyle, forceZeroCentering, overlapBars,
-            color)
-        return fig
+        return plot.bars(
+            analyses,
+            xLabel,
+            yLabel,
+            yLim,
+            xLim,
+            title,
+            decimalSep,
+            barWidth,
+            errorStyle,
+            forceZeroCentering,
+            overlapBars,
+            color,
+        )
+
     else:
         return
 
@@ -563,10 +584,19 @@ def plot_spectrogram(*sigObjs, winType:str='hann', winSize:int=1024,
     realSigObjs = \
         _remove_non_(SignalObj, sigObjs, msgPrefix='plot_spectrogram:')
     if len(realSigObjs) > 0:
-        figs = plot.spectrogram(realSigObjs, winType, winSize,
-                                overlap, xLabel, yLabel, xLim, yLim,
-                                title, decimalSep)
-        return figs
+        return plot.spectrogram(
+            realSigObjs,
+            winType,
+            winSize,
+            overlap,
+            xLabel,
+            yLabel,
+            xLim,
+            yLim,
+            title,
+            decimalSep,
+        )
+
     else:
         return
 
@@ -612,13 +642,33 @@ def plot_waterfall(*sigObjs, step=10, xLim:list=None,
     realSigObjs = \
         _remove_non_(SignalObj, sigObjs, msgPrefix='plot_waterfall:')
     if len(realSigObjs) > 0:
-        figs = plot.waterfall(realSigObjs, step, xLim,
-                              Pmin, Pmax, tmin, tmax, azim, elev,
-                              cmap, winPlot, waterfallPlot, fill,
-                              lines, alpha, figsize, winAlpha,
-                              removeGridLines, saveFig, bar, width,
-                              size, lcol, filtered)
-        return figs
+        return plot.waterfall(
+            realSigObjs,
+            step,
+            xLim,
+            Pmin,
+            Pmax,
+            tmin,
+            tmax,
+            azim,
+            elev,
+            cmap,
+            winPlot,
+            waterfallPlot,
+            fill,
+            lines,
+            alpha,
+            figsize,
+            winAlpha,
+            removeGridLines,
+            saveFig,
+            bar,
+            width,
+            size,
+            lcol,
+            filtered,
+        )
+
     else:
         return
 
@@ -633,8 +683,10 @@ def _remove_non_(dataType, dataSet,
                 dataType.__name__ == 'SignalObj':
                 newDataSet.append(item.systemSignal)
             else:
-                print("{}: skipping object {} as it isn't a {}."
-                      .format(msgPrefix, idx+1, dataType.__name__))
+                print(
+                    f"{msgPrefix}: skipping object {idx + 1} as it isn't a {dataType.__name__}."
+                )
+
         if isinstance(dataSet, tuple):
             newDataSet = tuple(newDataSet)
     return newDataSet
@@ -652,8 +704,6 @@ def save(fileName: str = time.ctime(time.time()), *PyTTaObjs):
     For more information on saving PyTTa objects in .pytta format see
     pytta.functions.pytta_save' documentation. (DEPRECATED)
     """
-    # default file format
-    defaultFormat = '.hdf5'
     # Checking the choosed file format
     if fileName.split('.')[-1] == 'hdf5':
         _h5_save(fileName, *PyTTaObjs)
@@ -664,6 +714,8 @@ def save(fileName: str = time.ctime(time.time()), *PyTTaObjs):
     else:
         print("File extension must be '.hdf5'.\n" +
               "Applying the default extension.")
+        # default file format
+        defaultFormat = '.hdf5'
         fileName += defaultFormat
         save(fileName, *PyTTaObjs)
 
@@ -693,102 +745,98 @@ def pytta_save(fileName: str = time.ctime(time.time()), *PyTTaObjs):
     if fileName.split('.')[-1] == 'pytta':
         fileName = fileName.replace('.pytta', '')
     meta = {}
-    with zf.ZipFile(fileName + '.pytta', 'w') as zdir:
+    with zf.ZipFile(f'{fileName}.pytta', 'w') as zdir:
         for idx, obj in enumerate(PyTTaObjs):
-            sobj = obj.pytta_save('obj' + str(idx))
-            meta['obj' + str(idx)] = sobj
+            sobj = obj.pytta_save(f'obj{str(idx)}')
+            meta[f'obj{str(idx)}'] = sobj
             zdir.write(sobj)
             os.remove(sobj)
         with open('Meta.json', 'w') as f:
             json.dump(meta, f, indent=4)
         zdir.write('Meta.json')
         os.remove('Meta.json')
-    return fileName + '.pytta'
+    return f'{fileName}.pytta'
 
 
 def pytta_load(fileName: str):
     """
     Loads .pytta files and parses it's types to the correct objects.
     """
-    if fileName.split('.')[-1] == 'pytta':
-        with zf.ZipFile(fileName, 'r') as zdir:
-            objects = zdir.namelist()
-            for obj in objects:
-                if obj.split('.')[-1] == 'json':
-                    meta = obj
-            zdir.extractall()
-            output = __parse_load(meta)
-    else:
+    if fileName.split('.')[-1] != 'pytta':
         raise ValueError("pytta_load function only works with *.pytta files")
+    with zf.ZipFile(fileName, 'r') as zdir:
+        objects = zdir.namelist()
+        for obj in objects:
+            if obj.split('.')[-1] == 'json':
+                meta = obj
+        zdir.extractall()
+        output = __parse_load(meta)
     return output
 
 
 def __parse_load(className):
     name = className.split('.')[0]
-    jsonFile = open(className, 'r')
-    openJson = json.load(jsonFile)
-    if name == 'SignalObj':
-        openMat = sio.loadmat(openJson['timeSignalAddress'])
-        out = SignalObj(openMat['timeSignal'], domain=openJson['lengthDomain'],
-                        samplingRate=openJson['samplingRate'],
-                        freqMin=openJson['freqLims'][0],
-                        freqMax=openJson['freqLims'][1],
-                        comment=openJson['comment'])
-        out.channels = __parse_channels(openJson['channels'],
-                                        out.channels)
-        os.remove(openJson['timeSignalAddress'])
+    with open(className, 'r') as jsonFile:
+        openJson = json.load(jsonFile)
+        if name == 'SignalObj':
+            openMat = sio.loadmat(openJson['timeSignalAddress'])
+            out = SignalObj(openMat['timeSignal'], domain=openJson['lengthDomain'],
+                            samplingRate=openJson['samplingRate'],
+                            freqMin=openJson['freqLims'][0],
+                            freqMax=openJson['freqLims'][1],
+                            comment=openJson['comment'])
+            out.channels = __parse_channels(openJson['channels'],
+                                            out.channels)
+            os.remove(openJson['timeSignalAddress'])
 
-    elif name == 'ImpulsiveResponse':
-        ir = pytta_load(openJson['SignalAddress']['ir'])
-        out = ImpulsiveResponse(ir=ir, **openJson['methodInfo'])
-        os.remove(openJson['SignalAddress']['ir'])
+        elif name == 'ImpulsiveResponse':
+            ir = pytta_load(openJson['SignalAddress']['ir'])
+            out = ImpulsiveResponse(ir=ir, **openJson['methodInfo'])
+            os.remove(openJson['SignalAddress']['ir'])
 
-    elif name == 'RecMeasure':
-        inch = list(np.arange(len(openJson['inChannels'])))
-        out = RecMeasure(device=openJson['device'], inChannels=inch,
-                         lengthDomain='samples',
-                         fftDegree=openJson['fftDegree'])
-        out.inChannels = __parse_channels(openJson['inChannels'],
-                                          out.inChannels)
+        elif name == 'RecMeasure':
+            inch = list(np.arange(len(openJson['inChannels'])))
+            out = RecMeasure(device=openJson['device'], inChannels=inch,
+                             lengthDomain='samples',
+                             fftDegree=openJson['fftDegree'])
+            out.inChannels = __parse_channels(openJson['inChannels'],
+                                              out.inChannels)
 
-    elif name == 'PlayRecMeasure':
-        inch = list(1 + np.arange(len(openJson['inChannels'])))
-        excit = pytta_load(openJson['excitationAddress'])
-        out = PlayRecMeasure(excitation=excit,
-                             device=openJson['device'], inChannels=inch)
-        out.inChannels = __parse_channels(openJson['inChannels'],
-                                          out.inChannels)
-        os.remove(openJson['excitationAddress'])
+        elif name == 'PlayRecMeasure':
+            inch = list(1 + np.arange(len(openJson['inChannels'])))
+            excit = pytta_load(openJson['excitationAddress'])
+            out = PlayRecMeasure(excitation=excit,
+                                 device=openJson['device'], inChannels=inch)
+            out.inChannels = __parse_channels(openJson['inChannels'],
+                                              out.inChannels)
+            os.remove(openJson['excitationAddress'])
 
-    elif name == 'FRFMeasure':
-        inch = list(1 + np.arange(len(openJson['inChannels'])))
-        excit = pytta_load(openJson['excitationAddress'])
-        out = FRFMeasure(excitation=excit, device=openJson['device'],
-                         inChannels=inch)
-        out.inChannels = __parse_channels(openJson['inChannels'],
-                                          out.inChannels)
-        os.remove(openJson['excitationAddress'])
+        elif name == 'FRFMeasure':
+            inch = list(1 + np.arange(len(openJson['inChannels'])))
+            excit = pytta_load(openJson['excitationAddress'])
+            out = FRFMeasure(excitation=excit, device=openJson['device'],
+                             inChannels=inch)
+            out.inChannels = __parse_channels(openJson['inChannels'],
+                                              out.inChannels)
+            os.remove(openJson['excitationAddress'])
 
-    elif name == 'Meta':
-        out = []
-        for val in openJson.values():
-            out.append(pytta_load(val))
-            os.remove(val)
-    os.remove(className)
-    jsonFile.close()
+        elif name == 'Meta':
+            out = []
+            for val in openJson.values():
+                out.append(pytta_load(val))
+                os.remove(val)
+        os.remove(className)
     return out
 
 
 def __parse_channels(chDict, chList):
-    ch = 1
-    for key in chDict.keys():
+    for ch, key in enumerate(chDict.keys(), start=1):
         chList[ch].num = key
         chList[ch].unit = chDict[key]['unit']
         chList[ch].name = chDict[key]['name']
         chList[ch].CF = chDict[key]['calib'][0]
         chList[ch].calibCheck\
             = chDict[key]['calib'][1]
-        ch += 1
     return chList
 
 
@@ -831,9 +879,13 @@ def _h5_save(fileName: str, *PyTTaObjs):
     # Final message
     plural1 = 's' if savedPObjCount > 1 else ''
     plural2 = 's' if totalPObjCount > 1 else ''
-    print('Saved inside the hdf5 file {} PyTTa object{}'
-          .format(savedPObjCount, plural1) +
-          ' of {} object{} provided.'.format(totalPObjCount, plural2))
+    print(
+        (
+            f'Saved inside the hdf5 file {savedPObjCount} PyTTa object{plural1}'
+            + f' of {totalPObjCount} object{plural2} provided.'
+        )
+    )
+
     return fileName
 
 
@@ -848,10 +900,7 @@ def __h5_pack(rootH5Group, pObj, objDesc):
                          FRFMeasure,
                          Analysis)):
         # Creation name
-        if isinstance(objDesc, str):
-            creationName = objDesc
-        else:
-            creationName = pObj.creation_name
+        creationName = objDesc if isinstance(objDesc, str) else pObj.creation_name
         # Check if creation_name was already used
         creationName = __h5_pack_count_and_rename(creationName, rootH5Group)
         # create obj's group
@@ -869,7 +918,7 @@ def __h5_pack(rootH5Group, pObj, objDesc):
         else:
             creationName = 'noNameDict'
         creationName = __h5_pack_count_and_rename(creationName, rootH5Group)
-        print("Saving the dict '{}'.".format(creationName))
+        print(f"Saving the dict '{creationName}'.")
         # create obj's group
         objH5Group = rootH5Group.create_group(creationName)
         objH5Group.attrs['class'] = 'dict'
@@ -893,12 +942,9 @@ def __h5_pack(rootH5Group, pObj, objDesc):
                 pObj.pop(idx)
                 continue
         if creationName is None:
-            if isinstance(objDesc, str):
-                creationName = objDesc
-            else:
-                creationName = 'noNameList'
+            creationName = objDesc if isinstance(objDesc, str) else 'noNameList'
         creationName = __h5_pack_count_and_rename(creationName, rootH5Group)
-        print("Saving the list '{}'.".format(creationName))
+        print(f"Saving the list '{creationName}'.")
         # create obj's group
         objH5Group = rootH5Group.create_group(creationName)
         objH5Group.attrs['class'] = 'list'
@@ -926,8 +972,7 @@ def __h5_pack_count_and_rename(creationName, h5Group):
     newCreationName = cp.copy(creationName)
     while newCreationName in h5Group:
         objNameCount += 1
-        newCreationName = \
-            creationName + '_' + str(objNameCount)
+        newCreationName = f'{creationName}_{objNameCount}'
     creationName = newCreationName
     return creationName
 
@@ -961,15 +1006,27 @@ def _h5_load(fileName: str):
             loadedObjects[PyTTaObjName] = __h5_unpack(PyTTaObjH5Group)
             objCount += 1
         except NotImplementedError:
-            print('Skipping hdf5 group named {} as it '.format(PyTTaObjName) +
-                  'isnt an PyTTa object group.')
+            print(
+                f'Skipping hdf5 group named {PyTTaObjName} as it isnt an PyTTa object group.'
+            )
+
     f.close()
     # Final message
     plural1 = 's' if objCount > 1 else ''
     plural2 = 's' if totCount > 1 else ''
-    print('Imported {} PyTTa object-like group'.format(objCount) + plural1 +
-          ' of {} group'.format(totCount) + plural2 +
-          ' inside the hdf5 file.')
+    print(
+        (
+            (
+                (
+                    f'Imported {objCount} PyTTa object-like group{plural1}'
+                    + f' of {totCount} group'
+                )
+                + plural2
+            )
+            + ' inside the hdf5 file.'
+        )
+    )
+
     return loadedObjects
 
 
@@ -1009,12 +1066,13 @@ def __h5_unpack(objH5Group):
         winType = objH5Group.attrs['winType']
         winSize = objH5Group.attrs['winSize']
         overlap = objH5Group.attrs['overlap']
-        IR = ImpulsiveResponse(method=method,
-                               winType=winType,
-                               winSize=winSize,
-                               overlap=overlap,
-                               ir=systemSignal)
-        return IR
+        return ImpulsiveResponse(
+            method=method,
+            winType=winType,
+            winSize=winSize,
+            overlap=overlap,
+            ir=systemSignal,
+        )
 
     elif objH5Group.attrs['class'] == 'RecMeasure':
         # PyTTaObj attrs unpacking
@@ -1029,19 +1087,19 @@ def __h5_unpack(objH5Group):
         device = _h5.list_w_int_parser(objH5Group.attrs['device'])
         inChannels = eval(objH5Group.attrs['inChannels'])
         blocking = objH5Group.attrs['blocking']
-        # Recreating the object
-        rObj = measurement(kind='rec',
-                           device=device,
-                           inChannels=inChannels,
-                           blocking=blocking,
-                           samplingRate=samplingRate,
-                           freqMin=freqMin,
-                           freqMax=freqMax,
-                           comment=comment,
-                           lengthDomain=lengthDomain,
-                           fftDegree=fftDegree,
-                           timeLength=timeLength)
-        return rObj
+        return measurement(
+            kind='rec',
+            device=device,
+            inChannels=inChannels,
+            blocking=blocking,
+            samplingRate=samplingRate,
+            freqMin=freqMin,
+            freqMax=freqMax,
+            comment=comment,
+            lengthDomain=lengthDomain,
+            fftDegree=fftDegree,
+            timeLength=timeLength,
+        )
 
     elif objH5Group.attrs['class'] == 'PlayRecMeasure':
         # PyTTaObj attrs unpacking
@@ -1060,19 +1118,19 @@ def __h5_unpack(objH5Group):
         # PlayRecMeasure attrs unpacking
         excitation = __h5_unpack(objH5Group['excitation'])
         outputAmplification = objH5Group.attrs['outputAmplification']
-        # Recreating the object
-        prObj = measurement(kind='playrec',
-                            excitation=excitation,
-                            outputAmplification=outputAmplification,
-                            device=device,
-                            inChannels=inChannels,
-                            outChannels=outChannels,
-                            blocking=blocking,
-                            samplingRate=samplingRate,
-                            freqMin=freqMin,
-                            freqMax=freqMax,
-                            comment=comment)
-        return prObj
+        return measurement(
+            kind='playrec',
+            excitation=excitation,
+            outputAmplification=outputAmplification,
+            device=device,
+            inChannels=inChannels,
+            outChannels=outChannels,
+            blocking=blocking,
+            samplingRate=samplingRate,
+            freqMin=freqMin,
+            freqMax=freqMax,
+            comment=comment,
+        )
 
     elif objH5Group.attrs['class'] == 'FRFMeasure':
         # PyTTaObj attrs unpacking
@@ -1096,23 +1154,23 @@ def __h5_unpack(objH5Group):
         winType = _h5.none_parser(objH5Group.attrs['winType'])
         winSize = _h5.none_parser(objH5Group.attrs['winSize'])
         overlap = _h5.none_parser(objH5Group.attrs['overlap'])
-        # Recreating the object
-        frfObj = measurement(kind='frf',
-                             method=method,
-                             winType=winType,
-                             winSize=winSize,
-                             overlap=overlap,
-                             excitation=excitation,
-                             outputAmplification=outputAmplification,
-                             device=device,
-                             inChannels=inChannels,
-                             outChannels=outChannels,
-                             blocking=blocking,
-                             samplingRate=samplingRate,
-                             freqMin=freqMin,
-                             freqMax=freqMax,
-                             comment=comment)
-        return frfObj
+        return measurement(
+            kind='frf',
+            method=method,
+            winType=winType,
+            winSize=winSize,
+            overlap=overlap,
+            excitation=excitation,
+            outputAmplification=outputAmplification,
+            device=device,
+            inChannels=inChannels,
+            outChannels=outChannels,
+            blocking=blocking,
+            samplingRate=samplingRate,
+            freqMin=freqMin,
+            freqMax=freqMax,
+            comment=comment,
+        )
 
     elif objH5Group.attrs['class'] == 'Analysis':
         # Analysis attrs unpacking
@@ -1129,41 +1187,36 @@ def __h5_unpack(objH5Group):
         # Analysis data unpacking
         data = np.array(objH5Group['data'])
         # If error in save moment was None no group was created for it
-        if 'error' in objH5Group:
-            error = np.array(objH5Group['error'])
-        else:
-            error = None
-        # Recreating the object
-        anObject = Analysis(anType=anType,
-                            nthOct=nthOct,
-                            minBand=minBand,
-                            maxBand=maxBand,
-                            data=data,
-                            dataLabel=dataLabel,
-                            error=error,
-                            errorLabel=errorLabel,
-                            comment=comment,
-                            xLabel=xLabel,
-                            yLabel=yLabel,
-                            title=title)
-        return anObject
+        error = np.array(objH5Group['error']) if 'error' in objH5Group else None
+        return Analysis(
+            anType=anType,
+            nthOct=nthOct,
+            minBand=minBand,
+            maxBand=maxBand,
+            data=data,
+            dataLabel=dataLabel,
+            error=error,
+            errorLabel=errorLabel,
+            comment=comment,
+            xLabel=xLabel,
+            yLabel=yLabel,
+            title=title,
+        )
 
     elif objH5Group.attrs['class'] == 'dict':
-        dictObj = {}
-        for PyTTaObjName, PyTTaObjH5Group in objH5Group.items():
-            dictObj[PyTTaObjName] = __h5_unpack(PyTTaObjH5Group)
-        return dictObj
+        return {
+            PyTTaObjName: __h5_unpack(PyTTaObjH5Group)
+            for PyTTaObjName, PyTTaObjH5Group in objH5Group.items()
+        }
 
     elif objH5Group.attrs['class']  == 'list':
-        dictObj = {}
-        for idx, PyTTaObjH5Group in objH5Group.items():
-            dictObj[int(idx)] = __h5_unpack(PyTTaObjH5Group)
+        dictObj = {
+            int(idx): __h5_unpack(PyTTaObjH5Group)
+            for idx, PyTTaObjH5Group in objH5Group.items()
+        }
+
         idxs = [int(item) for item in list(dictObj.keys())]
         maxIdx = max(idxs)
-        listObj = []
-        for idx in range(maxIdx+1):
-            listObj.append(dictObj[idx])
-        return listObj
-
+        return [dictObj[idx] for idx in range(maxIdx+1)]
     else:
         raise NotImplementedError

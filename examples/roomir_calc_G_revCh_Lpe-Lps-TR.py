@@ -5,6 +5,7 @@ Created on Sun Jun 23 15:08:25 2019
 
 @author: mtslazarin
 """
+
 # %% Initializating
 import pytta
 from pytta import roomir as rmr
@@ -102,7 +103,7 @@ if plots:
 # %% T_revCh
 a = pytta.load(analysisFileNameTR)
 for key, value in a.items():
-    exec(key + ' = value')
+    exec(f'{key} = value')
     exec(key + ".creation_name = '" + key + "'")
 if plots:
     _ = T_revCh.plot()
@@ -113,6 +114,6 @@ pytta.save(analysisFileName, Lps_revCh, Lpe_revCh, T_revCh)
 # %%
 a = pytta.load(analysisFileName)
 for key, value in a.items():
-    exec(key + 'ld = value')
+    exec(f'{key}ld = value')
     exec(key + "ld.creation_name = '" + key + "'")
 V_revCh = 207

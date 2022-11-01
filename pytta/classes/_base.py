@@ -166,12 +166,13 @@ class PyTTaObj(RICI):
         return
 
     def _to_dict(self):
-        out = {'samplingRate': self.samplingRate,
-               'freqLims': [self.freqMin, self.freqMax],
-               'fftDegree': self.fftDegree,
-               'lengthDomain': self.lengthDomain,
-               'comment': self.comment}
-        return out
+        return {
+            'samplingRate': self.samplingRate,
+            'freqLims': [self.freqMin, self.freqMax],
+            'fftDegree': self.fftDegree,
+            'lengthDomain': self.lengthDomain,
+            'comment': self.comment,
+        }
 
     def save_mat(self, filename=time.ctime(time.time())):
         myObj = vars(self)
@@ -196,7 +197,6 @@ class PyTTaObj(RICI):
         h5group.attrs['lengthDomain'] = _h5.none_parser(self.lengthDomain)
         h5group.attrs['fftDegree'] = self.fftDegree
         h5group.attrs['timeLength'] = self.timeLength
-        pass
 
 
 class CoordinateObj(object):
@@ -243,10 +243,11 @@ class CoordinateObj(object):
 
     @property
     def polar(self):
-        polarInDeg = [self._polar[0],
-                      self._polar[1]/np.pi*180,
-                      self._polar[2]/np.pi*180]
-        return polarInDeg
+        return [
+            self._polar[0],
+            self._polar[1] / np.pi * 180,
+            self._polar[2] / np.pi * 180,
+        ]
 
     @polar.setter
     def polar(self, newpolar):
@@ -290,10 +291,7 @@ class CoordinateObj(object):
                        e.g. \'m\'')
 
     def _to_dict(self):
-        out = {'point': self.point,
-               'ref': self.ref,
-               'unit': self.unit}
-        return out
+        return {'point': self.point, 'ref': self.ref, 'unit': self.unit}
 
 
 class ChannelObj(object):
@@ -341,12 +339,9 @@ class ChannelObj(object):
                  orientation=CoordinateObj()):
 
         self.num = num
-        if name is None:
-            self.name = 'Ch. '+str(self.num)
-        else:
-            self.name = name
+        self.name = f'Ch. {str(self.num)}' if name is None else name
         if code is None:
-            self.code = self.name[0:2].replace(' ', '')+str(self.num)
+            self.code = self.name[:2].replace(' ', '') + str(self.num)
         else:
             self.code = code
         self.unit = unit
@@ -371,28 +366,23 @@ class ChannelObj(object):
         if not isinstance(other, ChannelObj):
             raise TypeError('Can\'t "multiply" by other \
                             type than a ChannelObj')
-        newCh = ChannelObj(self.num,
-                           # name=self.name+'.'+other.name,
-                           unit=self.unit+'.'+other.unit,
-                           CF=self.CF*other.CF,
-                           calibCheck=self.calibCheck if self.calibCheck
-                           else other.calibCheck)
-        return newCh
+        return ChannelObj(
+            self.num,
+            unit=f'{self.unit}.{other.unit}',
+            CF=self.CF * other.CF,
+            calibCheck=self.calibCheck or other.calibCheck,
+        )
 
     def __truediv__(self, other):
         if not isinstance(other, ChannelObj):
             raise TypeError('Can\'t "divide" by other type than a ChannelObj')
-        if self.unit == other.unit:
-            newunit = 'FS'
-        else:
-            newunit = self.unit+'/'+other.unit
-        newCh = ChannelObj(self.num,
-                           # name=self.name+'/'+other.name,
-                           unit=newunit,
-                           CF=self.CF/other.CF,
-                           calibCheck=self.calibCheck if self.calibCheck
-                           else other.calibCheck)
-        return newCh
+        newunit = 'FS' if self.unit == other.unit else f'{self.unit}/{other.unit}'
+        return ChannelObj(
+            self.num,
+            unit=newunit,
+            CF=self.CF / other.CF,
+            calibCheck=self.calibCheck or other.calibCheck,
+        )
 
     def calib_volt(self, refSignalObj, refVrms, refFreq):
         Vrms = refSignalObj.rms()[0]
@@ -413,10 +403,22 @@ class ChannelObj(object):
         freqFound = np.round(refSignalObj.freqVector[np.argmax(
                 refSignalObj.freqSignal)])
         if not np.isclose(freqFound, float(refFreq), rtol=1e-4):
-            print('\x1b[0;30;43mATENTTION! Found calibration frequency (' +
-                  '{}'.format(freqFound) +
-                  ' [Hz]) differs from refFreq (' +
-                  '{}'.format(refFreq) + ' [Hz])\x1b[0m')
+            print(
+                (
+                    (
+                        (
+                            (
+                                '\x1b[0;30;43mATENTTION! Found calibration frequency ('
+                                + f'{freqFound}'
+                            )
+                            + ' [Hz]) differs from refFreq ('
+                        )
+                        + f'{refFreq}'
+                    )
+                    + ' [Hz])\x1b[0m'
+                )
+            )
+
         self.CF = refPrms/Prms
         self.unit = 'Pa'
         return
@@ -472,12 +474,11 @@ class ChannelObj(object):
     @unit.setter
     def unit(self, newunit):
         if isinstance(newunit, str):
+            self._unit = newunit
             if newunit in self.units:
-                self._unit = newunit
                 self.dBName = self.units[newunit][0]
                 self.dBRef = self.units[newunit][1]
             else:
-                self._unit = newunit
                 self.dBName = 'dB'
                 self.dBRef = 1
         else:
@@ -490,7 +491,7 @@ class ChannelObj(object):
 
     @CF.setter
     def CF(self, newCF):
-        if isinstance(newCF, float) or isinstance(newCF, int):
+        if isinstance(newCF, (float, int)):
             self._CF = newCF
         else:
             raise TypeError('Channel correction factor must be a number.')
@@ -546,12 +547,13 @@ class ChannelObj(object):
         return
 
     def _to_dict(self):
-        out = {'calib': [self.CF, self.calibCheck],
-               'unit': self.unit,
-               'name': self.name,
-               'coordinates': self.coordinates._to_dict(),
-               'orientation': self.orientation._to_dict()}
-        return out
+        return {
+            'calib': [self.CF, self.calibCheck],
+            'unit': self.unit,
+            'name': self.name,
+            'coordinates': self.coordinates._to_dict(),
+            'orientation': self.orientation._to_dict(),
+        }
 
 
 class ChannelsList(object):
@@ -653,23 +655,23 @@ class ChannelsList(object):
                             type than a ChannelsList')
         if len(self) > 1:
             if len(otherList) > 1:
-                if len(self) != len(otherList):
+                if len(self) == len(otherList):
+                    newChList = ChannelsList([self[self.mapping[idx]]*
+                                              otherList[otherList.mapping[idx]]
+                                              for idx in range(len(self))])
+                else:
                     raise ValueError("Both ChannelsList-like objects must \
                                      have the same number of channels.")
-                newChList = ChannelsList([self[self.mapping[idx]]*
-                                          otherList[otherList.mapping[idx]]
-                                          for idx in range(len(self))])
             else:
                 newChList = ChannelsList([self[self.mapping[idx]]*
                                           otherList[otherList.mapping[0]]
                                           for idx in range(len(self))])
+        elif len(otherList) > 1:
+            newChList = ChannelsList([self[self.mapping[0]]*otherList[index]
+                                      for index in range(len(otherList))])
         else:
-            if len(otherList) > 1:
-                newChList = ChannelsList([self[self.mapping[0]]*otherList[index]
-                                          for index in range(len(otherList))])
-            else:
-                newChList = ChannelsList([self[self.mapping[0]]*
-                                          otherList[otherList.mapping[0]]])
+            newChList = ChannelsList([self[self.mapping[0]]*
+                                      otherList[otherList.mapping[0]]])
         return newChList
 
     def __truediv__(self, otherList):
@@ -678,33 +680,30 @@ class ChannelsList(object):
                             type than a ChannelsList')
         if len(self) > 1:
             if len(otherList) > 1:
-                if len(self) != len(otherList):
+                if len(self) == len(otherList):
+                    newChList = ChannelsList([self[self.mapping[idx]]/
+                                              otherList[otherList.mapping[idx]]
+                                              for idx in range(len(self))])
+                else:
                     raise ValueError("Both ChannelsList-like objects must \
                                      have the same number of channels.")
-                
-                newChList = ChannelsList([self[self.mapping[idx]]/
-                                          otherList[otherList.mapping[idx]]
-                                          for idx in range(len(self))])
+
             else:
                 newChList = ChannelsList([self[self.mapping[idx]]/
                                           otherList[otherList.mapping[0]]
                                           for idx in range(len(self))])
+        elif len(otherList) > 1:
+            newChList = ChannelsList([self[self.mapping[0]]/
+                                      otherList[otherList.mapping[idx]]
+                                      for idx in range(len(otherList))])
         else:
-            if len(otherList) > 1:
-                newChList = ChannelsList([self[self.mapping[0]]/
-                                          otherList[otherList.mapping[idx]]
-                                          for idx in range(len(otherList))])
-            else:
-                newChList = ChannelsList([self._channels[0] /
-                                          otherList._channels[0]])
+            newChList = ChannelsList([self._channels[0] /
+                                      otherList._channels[0]])
         return newChList
 
     def __contains__(self, chRef):
         if isinstance(chRef, str):
-            if chRef in self.names or chRef in self.codes:
-                return True
-            else:
-                return False
+            return chRef in self.names or chRef in self.codes
         elif isinstance(chRef, int):
             return chRef in self.mapping
 
@@ -721,22 +720,13 @@ class ChannelsList(object):
         return [ch.code for ch in self._channels]
 
     def CFlist(self):
-        out = []
-        for obj in self._channels:
-            out.append(obj.CF)
-        return out
+        return [obj.CF for obj in self._channels]
 
     def dBRefList(self):
-        out = []
-        for obj in self._channels:
-            out.append(obj.dBRef)
-        return out
+        return [obj.dBRef for obj in self._channels]
 
     def _to_dict(self):
-        out = {}
-        for ch in self._channels:
-            out[ch.num] = ch._to_dict()
-        return out
+        return {ch.num: ch._to_dict() for ch in self._channels}
 
     def append(self, newCh):
         if isinstance(newCh, ChannelObj):
@@ -760,7 +750,7 @@ class ChannelsList(object):
                 for i in range(dCh):
                     self.append(ChannelObj(num=(newIndex+i+1)))
             if dCh < 0:
-                for i in range(0, -dCh):
+                for _ in range(-dCh):
                     self._channels.pop(-1)
         except AttributeError:
             if isinstance(rule, list):
@@ -769,27 +759,26 @@ class ChannelsList(object):
                     self.append(ChannelObj(num=index+1, name='Channel ' +
                                            str(index)))
             elif rule is None:
-                count = 1
-                newchs = []
-                # Adjusting channel's numbers
-                for ch in self._channels:
-                    newchs.append(ChannelObj(num=count,
-                                             name=ch.name,
-                                             unit=ch.unit,
-                                             CF=ch.CF,
-                                             calibCheck=ch.calibCheck,
-                                             coordinates=ch.coordinates,
-                                             orientation=ch.orientation))
-                    count += 1
+                newchs = [
+                    ChannelObj(
+                        num=count,
+                        name=ch.name,
+                        unit=ch.unit,
+                        CF=ch.CF,
+                        calibCheck=ch.calibCheck,
+                        coordinates=ch.coordinates,
+                        orientation=ch.orientation,
+                    )
+                    for count, ch in enumerate(self._channels, start=1)
+                ]
+
                 # Adjusting channel's names
                 for idx1 in range(len(newchs)):
                     neq = 2
                     for idx2 in range(len(newchs)):
-                        if idx1 != idx2:
-                            if newchs[idx1].name == newchs[idx2].name:
-                                newchs[idx2].name = newchs[idx1].name + \
-                                    ' - ' + str(neq)
-                                neq += 1
+                        if idx1 != idx2 and newchs[idx1].name == newchs[idx2].name:
+                            newchs[idx2].name = f'{newchs[idx1].name} - {str(neq)}'
+                            neq += 1
                 self._channels = newchs
             else:
                 raise TypeError('Rule must be an SignalObj or a list with ' +
@@ -798,6 +787,6 @@ class ChannelsList(object):
 
     def rename_channels(self):
         for chIndex in range(len(self)):
-            newname = 'Ch. ' + str(chIndex+1)
+            newname = f'Ch. {str(chIndex + 1)}'
             self._channels[chIndex].name = newname
         return

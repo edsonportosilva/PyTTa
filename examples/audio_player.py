@@ -9,11 +9,11 @@ import soundfile as sf
 
 def parseArgs(arg):
     file = None
-    if arg.split('.')[-1].upper() in sf.available_formats().keys():
-        file = arg
-    else:
-        file = None
-    return file
+    return (
+        arg
+        if arg.split('.')[-1].upper() in sf.available_formats().keys()
+        else None
+    )
 
 
 class AudioPlayer(object):
@@ -123,14 +123,11 @@ class AudioPlayer(object):
                 else:
                     comm = comm[0]
 
-                # check if the command can be used by the application
-                    # True: evaluates it as a function
                 if comm[:] == '-load':
-                    eval('self.' + comm[1:] + '_(' + 'arg' + ')')
+                    eval(f'self.{comm[1:]}_(arg)')
                 elif comm[:] in self.commandList[1:]:
-                    eval('self.' + comm[1:] + '_()')
+                    eval(f'self.{comm[1:]}_()')
 
-                # False: it is ignored
                 else:
                     print("Unknown command", self.command, "\nSkipping.")
 
@@ -138,7 +135,6 @@ class AudioPlayer(object):
                     # read input from command line
                     self.command = input()
 
-            # try-EXCEPT: EXCEPT if there's no attribute, then do this:
             except AttributeError:
                 # read command from command line
                 self.command = input()

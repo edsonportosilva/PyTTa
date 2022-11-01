@@ -137,9 +137,10 @@ class Analysis(RICI):
         return
 
     def __str__(self):
-        return ('1/{} octave band {} '.format(self.nthOct, self.anType) +
-            'analysis from the {} [Hz] to the '.format(self.minBand) +
-            '{} [Hz] band.'.format(self.maxBand))
+        return (
+            f'1/{self.nthOct} octave band {self.anType} '
+            + f'analysis from the {self.minBand} [Hz] to the '
+        ) + f'{self.maxBand} [Hz] band.'
 
     def __repr__(self):
         return (f'{self.__class__.__name__}('
@@ -185,28 +186,30 @@ class Analysis(RICI):
                 data = self.data + other
                 anType = 'mixed'
         else:
-            raise NotImplementedError("Operation not implemented between " +
-                                      "Analysis and {}".format(type(other)) +
-                                      "types.")
+            raise NotImplementedError(
+                f"Operation not implemented between Analysis and {type(other)}types."
+            )
+
         selfDataLabel = self.dataLabel if self.dataLabel is not None \
-            else 'Analysis 1'
-        if hasattr(other,'dataLabel'):
-            if other.dataLabel is not None:
-                otherDataLabel = other.dataLabel
-            else:
-                otherDataLabel = 'Analysis 2'
+                else 'Analysis 1'
+        if hasattr(other, 'dataLabel') and other.dataLabel is not None:
+            otherDataLabel = other.dataLabel
         else:
             otherDataLabel = 'Analysis 2'
-        result = Analysis(anType=anType, nthOct=self.nthOct,
-                        minBand=self.minBand, maxBand=self.maxBand,
-                        data=data, dataLabel=selfDataLabel +
-                                            ' + ' + otherDataLabel,
-                        error=None, errorLabel=None,
-                        comment=None,
-                        xLabel=self.xLabel, yLabel=self.yLabel,
-                        title=None)
-
-        return result
+        return Analysis(
+            anType=anType,
+            nthOct=self.nthOct,
+            minBand=self.minBand,
+            maxBand=self.maxBand,
+            data=data,
+            dataLabel=f'{selfDataLabel} + {otherDataLabel}',
+            error=None,
+            errorLabel=None,
+            comment=None,
+            xLabel=self.xLabel,
+            yLabel=self.yLabel,
+            title=None,
+        )
 
     def __sub__(self, other):
         if isinstance(other, Analysis):
@@ -243,28 +246,30 @@ class Analysis(RICI):
                 data = self.data - other
                 anType = 'mixed'
         else:
-            raise NotImplementedError("Operation not implemented between " +
-                                      "Analysis and {}".format(type(other)) +
-                                      "types.")
+            raise NotImplementedError(
+                f"Operation not implemented between Analysis and {type(other)}types."
+            )
+
         selfDataLabel = self.dataLabel if self.dataLabel is not None \
-            else 'Analysis 1'
-        if hasattr(other,'dataLabel'):
-            if other.dataLabel is not None:
-                otherDataLabel = other.dataLabel
-            else:
-                otherDataLabel = 'Analysis 2'
+                else 'Analysis 1'
+        if hasattr(other, 'dataLabel') and other.dataLabel is not None:
+            otherDataLabel = other.dataLabel
         else:
             otherDataLabel = 'Analysis 2'
-        result = Analysis(anType=anType, nthOct=self.nthOct,
-                        minBand=self.minBand, maxBand=self.maxBand,
-                        data=data, dataLabel=selfDataLabel +
-                                            ' - ' + otherDataLabel,
-                        error=None, errorLabel=None,
-                        comment=None,
-                        xLabel=self.xLabel, yLabel=self.yLabel,
-                        title=None)
-
-        return result
+        return Analysis(
+            anType=anType,
+            nthOct=self.nthOct,
+            minBand=self.minBand,
+            maxBand=self.maxBand,
+            data=data,
+            dataLabel=f'{selfDataLabel} - {otherDataLabel}',
+            error=None,
+            errorLabel=None,
+            comment=None,
+            xLabel=self.xLabel,
+            yLabel=self.yLabel,
+            title=None,
+        )
 
     def __mul__(self, other):
         if isinstance(other, Analysis):
@@ -280,23 +285,25 @@ class Analysis(RICI):
             raise TypeError("Analysys can only be operated with int, float, " +
                             "or Analysis types.")
         selfDataLabel = self.dataLabel if self.dataLabel is not None \
-            else 'Analysis 1'
-        if hasattr(other,'dataLabel'):
-            if other.dataLabel is not None:
-                otherDataLabel = other.dataLabel
-            else:
-                otherDataLabel = 'Analysis 2'
+                else 'Analysis 1'
+        if hasattr(other, 'dataLabel') and other.dataLabel is not None:
+            otherDataLabel = other.dataLabel
         else:
             otherDataLabel = 'Analysis 2'
-        result = Analysis(anType=anType, nthOct=self.nthOct,
-                        minBand=self.minBand, maxBand=self.maxBand,
-                        data=data, dataLabel=selfDataLabel +
-                                            ' * ' + otherDataLabel,
-                        error=None, errorLabel=None,
-                        comment=None,
-                        xLabel=self.xLabel, yLabel=self.yLabel,
-                        title=None)
-        return result
+        return Analysis(
+            anType=anType,
+            nthOct=self.nthOct,
+            minBand=self.minBand,
+            maxBand=self.maxBand,
+            data=data,
+            dataLabel=f'{selfDataLabel} * {otherDataLabel}',
+            error=None,
+            errorLabel=None,
+            comment=None,
+            xLabel=self.xLabel,
+            yLabel=self.yLabel,
+            title=None,
+        )
 
     def __rtruediv__(self, other):
         if isinstance(other, Analysis):
@@ -326,27 +333,30 @@ class Analysis(RICI):
                 data = other / self.data
                 anType = 'mixed'
         else:
-            raise NotImplementedError("Operation not implemented between " +
-                                      "Analysis and {}".format(type(other)) +
-                                      "types.")
+            raise NotImplementedError(
+                f"Operation not implemented between Analysis and {type(other)}types."
+            )
+
         selfDataLabel = self.dataLabel if self.dataLabel is not None \
-            else 'Analysis 1'
-        if hasattr(other,'dataLabel'):
-            if other.dataLabel is not None:
-                otherDataLabel = other.dataLabel
-            else:
-                otherDataLabel = 'Analysis 2'
+                else 'Analysis 1'
+        if hasattr(other, 'dataLabel') and other.dataLabel is not None:
+            otherDataLabel = other.dataLabel
         else:
             otherDataLabel = 'Analysis 2'
-        result = Analysis(anType=anType, nthOct=self.nthOct,
-                        minBand=self.minBand, maxBand=self.maxBand,
-                        data=data, dataLabel=selfDataLabel +
-                                            ' / ' + otherDataLabel,
-                        error=None, errorLabel=None,
-                        comment=None,
-                        xLabel=self.xLabel, yLabel=self.yLabel,
-                        title=None)
-        return result
+        return Analysis(
+            anType=anType,
+            nthOct=self.nthOct,
+            minBand=self.minBand,
+            maxBand=self.maxBand,
+            data=data,
+            dataLabel=f'{selfDataLabel} / {otherDataLabel}',
+            error=None,
+            errorLabel=None,
+            comment=None,
+            xLabel=self.xLabel,
+            yLabel=self.yLabel,
+            title=None,
+        )
 
 
     def __truediv__(self, other):
@@ -377,28 +387,30 @@ class Analysis(RICI):
                 data = self.data / other
                 anType = 'mixed'
         else:
-            raise NotImplementedError("Operation not implemented between " +
-                                      "Analysis and {}".format(type(other)) +
-                                      "types.")
+            raise NotImplementedError(
+                f"Operation not implemented between Analysis and {type(other)}types."
+            )
+
         selfDataLabel = self.dataLabel if self.dataLabel is not None \
-            else 'Analysis 1'
-        if hasattr(other,'dataLabel'):
-            if other.dataLabel is not None:
-                otherDataLabel = other.dataLabel
-            else:
-                otherDataLabel = 'Analysis 2'
+                else 'Analysis 1'
+        if hasattr(other, 'dataLabel') and other.dataLabel is not None:
+            otherDataLabel = other.dataLabel
         else:
             otherDataLabel = 'Analysis 2'
-        result = Analysis(anType=anType, nthOct=self.nthOct,
-                        minBand=self.minBand, maxBand=self.maxBand,
-                        data=data, dataLabel=selfDataLabel +
-                                            ' / ' + otherDataLabel,
-                        error=None, errorLabel=None,
-                        comment=None,
-                        xLabel=self.xLabel, yLabel=self.yLabel,
-                        title=None)
-
-        return result
+        return Analysis(
+            anType=anType,
+            nthOct=self.nthOct,
+            minBand=self.minBand,
+            maxBand=self.maxBand,
+            data=data,
+            dataLabel=f'{selfDataLabel} / {otherDataLabel}',
+            error=None,
+            errorLabel=None,
+            comment=None,
+            xLabel=self.xLabel,
+            yLabel=self.yLabel,
+            title=None,
+        )
 
     # Properties
 
@@ -454,9 +466,16 @@ class Analysis(RICI):
             raise TypeError("Number of bands per octave must be int")
         if '_nthOct' in locals():
             if self.nthOct > new:
-                raise TypeError("It's impossible to convert from " +
-                                "{} to {} bands".format(self.nthOct, new) +
-                                "per octave")
+                raise TypeError(
+                    (
+                        (
+                            "It's impossible to convert from "
+                            + f"{self.nthOct} to {new} bands"
+                        )
+                        + "per octave"
+                    )
+                )
+
             else:
                 raise NotImplementedError('Conversion between different ' +
                                           'nthOct not implemented yet.')
@@ -484,7 +503,7 @@ class Analysis(RICI):
             raise TypeError("Frequency range values must \
                             be either int or float.")
         if new in self.bands:
-            print("ATENTION! Deleting data below " + str(new) + " [Hz].")
+            print(f"ATENTION! Deleting data below {str(new)} [Hz].")
             self._minBand = new
             self.data = self.data[int(np.where(self.bands==new)[-1]):]
         else:
@@ -514,7 +533,7 @@ class Analysis(RICI):
             raise TypeError("Frequency range values must \
                             be either int or float.")
         if new in self.bands:
-            print("ATENTION! Deleting data above " + str(new) + " [Hz].")
+            print(f"ATENTION! Deleting data above {str(new)} [Hz].")
             self._maxBand = new
             self.data = self.data[:int(np.where(self.bands==new)[-1])+1]
         else:
@@ -553,14 +572,18 @@ class Analysis(RICI):
         self._minBand = float(bands[0])
         self._maxBand = float(bands[-1])
         if not isinstance(newData, list) and \
-            not isinstance(newData, np.ndarray):
+                not isinstance(newData, np.ndarray):
             raise TypeError("'data' must be provided as a list or " +
                             "numpy ndarray.")
         elif len(newData) != len(bands):
-            raise ValueError("Provided 'data' has different number of bands " +
-                             "then the existant bands betwen " +
-                             "{} and {} [Hz].".format(self.minBand,
-                                                      self.maxBand))
+            raise ValueError(
+                (
+                    "Provided 'data' has different number of bands "
+                    + "then the existant bands betwen "
+                    + f"{self.minBand} and {self.maxBand} [Hz]."
+                )
+            )
+
 
         # ...
         self._data = np.array(newData)
@@ -587,16 +610,16 @@ class Analysis(RICI):
     @error.setter
     def error(self, newError):
         if not isinstance(newError, np.ndarray) and \
-            not isinstance(newError, list) and \
-                newError is not None:
+                not isinstance(newError, list) and \
+                    newError is not None:
             raise TypeError("'error' must be provided as a list, numpy " +
                             "ndarray or None.")
-        if newError is not None:
-            if len(newError) != len(self.data):
-                raise ValueError("'error' must have the same length as 'data'.")
-            self._error = np.array(newError)
-        else:
+        if newError is None:
             self._error = newError
+        elif len(newError) != len(self.data):
+            raise ValueError("'error' must have the same length as 'data'.")
+        else:
+            self._error = np.array(newError)
         return
 
     @property
@@ -793,26 +816,30 @@ class Analysis(RICI):
 
         if xLabel is not None:
             self.barsXLabel = xLabel
-        else:
-            if hasattr(self, 'barsXLabel'):
-                if self.barsXLabel is not None:
-                    xLabel = self.barsXLabel
+        elif hasattr(self, 'barsXLabel') and self.barsXLabel is not None:
+            xLabel = self.barsXLabel
 
         if yLabel is not None:
             self.barsYLabel = yLabel
-        else:
-            if hasattr(self, 'barsYLabel'):
-                if self.barsYLabel is not None:
-                    yLabel = self.barsYLabel
+        elif hasattr(self, 'barsYLabel') and self.barsYLabel is not None:
+            yLabel = self.barsYLabel
 
         if title is not None:
             self.barsTitle = title
-        else:
-            if hasattr(self, 'barsTitle'):
-                if self.barsTitle is not None:
-                    title = self.barsTitle
+        elif hasattr(self, 'barsTitle') and self.barsTitle is not None:
+            title = self.barsTitle
 
-        fig = plot.bars((self,), xLabel, yLabel, yLim, xLim,
-                        self.title, decimalSep, barWidth, errorStyle,
-                        forceZeroCentering, overlapBars, color)
-        return fig
+        return plot.bars(
+            (self,),
+            xLabel,
+            yLabel,
+            yLim,
+            xLim,
+            self.title,
+            decimalSep,
+            barWidth,
+            errorStyle,
+            forceZeroCentering,
+            overlapBars,
+            color,
+        )

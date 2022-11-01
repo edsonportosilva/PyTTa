@@ -123,10 +123,7 @@ def _start_sample_ISO3382(timeSignal, threshold) -> np.ndarray:
         if thresholdShift > 0:
             print("_start_sample_ISO3382: 20 dB threshold too high. " +
                   "Decreasing it.")
-        if lastBelowThreshold > 0:
-            startSample = lastBelowThreshold
-        else:
-            startSample = 1
+        startSample = lastBelowThreshold if lastBelowThreshold > 0 else 1
     return startSample
 
 
@@ -155,6 +152,8 @@ def _Lundeby_correction(band, timeSignal, samplingRate, numSamples,
     repeat = True
     i = 0
     winTimeLength = 0.01
+    # 7) estimate background noise level (BGL)
+    bgNoiseMargin = 7
     while repeat: # loop to find proper winTimeLength
         winTimeLength = winTimeLength + 0.01*i
         # 1) local time average:
@@ -174,31 +173,26 @@ def _Lundeby_correction(band, timeSignal, samplingRate, numSamples,
                                       >= bgNoiseLevel + dBtoNoise)[0][-1]
         dynRange = 10*np.log10(timeWinData[stopIdx]) \
             - 10*np.log10(timeWinData[startIdx])
-        if (stopIdx == startIdx) or (dynRange > -5)[0]:
-            if not suppressWarnings:
-                print(band, "[Hz] band: SNR too low for the preliminar slope",
-                  "calculation.")
-            # return returnTuple
-
+        if (
+            (stopIdx == startIdx) or (dynRange > -5)[0]
+        ) and not suppressWarnings:
+            print(band, "[Hz] band: SNR too low for the preliminar slope",
+              "calculation.")
         # X*c = EDC (energy decaying curve)
         X = np.ones((stopIdx-startIdx, 2), dtype=np.float32)
         X[:, 1] = timeVecWin[startIdx:stopIdx, 0]
         c = np.linalg.lstsq(X, 10*np.log10(timeWinData[startIdx:stopIdx]),
                             rcond=-1)[0]
 
-        if (c[1] == 0)[0] or np.isnan(c).any():
-            if not suppressWarnings:
-                print(band, "[Hz] band: regression failed. T would be inf.")
-            # return returnTuple
-
+        if ((c[1] == 0)[0] or np.isnan(c).any()) and not suppressWarnings:
+            print(band, "[Hz] band: regression failed. T would be inf.")
         # 4) preliminary intersection
         crossingPoint = (bgNoiseLevel - c[0]) / c[1]  # [s]
-        if (crossingPoint > 2*(timeLength + sampleShift/samplingRate))[0]:
-            if not suppressWarnings:
-                print(band, "[Hz] band: preliminary intersection point between",
-                      "bgNoiseLevel and the decay slope greater than signal length.")
-            # return returnTuple
-
+        if (crossingPoint > 2 * (timeLength + sampleShift / samplingRate))[
+            0
+        ] and not suppressWarnings:
+            print(band, "[Hz] band: preliminary intersection point between",
+                  "bgNoiseLevel and the decay slope greater than signal length.")
         # 5) new local time interval length
         nBlocksInDecay = numParts * dynRange[0] / -10
 
@@ -214,8 +208,6 @@ def _Lundeby_correction(band, timeSignal, samplingRate, numSamples,
         loopCounter = 0
 
         while (np.abs(oldCrossingPoint - crossingPoint) > 0.001)[0]:
-            # 7) estimate background noise level (BGL)
-            bgNoiseMargin = 7
             idxLast10Percent = int(len(timeWinData)-(len(timeWinData)//10))
             bgStartTime = crossingPoint - bgNoiseMargin/c[1]
             if (bgStartTime > timeVecWin[-1:][0])[0]:
@@ -312,14 +304,11 @@ def energy_decay_calculation(band, timeSignal, timeVector, samplingRate,
     if interIdx == 0:
         interIdx = -1
 
-    truncatedTimeSignal = timeSignal[:interIdx, 0]
     truncatedTimeVector = timeVector[:interIdx]
 
     if lateRT != 0.0:
-        if not bypassLundeby:
-            C = samplingRate*BGL*lateRT/(6*np.log(10))
-        else:
-            C = 0
+        C = 0 if bypassLundeby else samplingRate*BGL*lateRT/(6*np.log(10))
+        truncatedTimeSignal = timeSignal[:interIdx, 0]
         sqrInv = truncatedTimeSignal[::-1]**2
         energyDecayFull = np.cumsum(sqrInv)[::-1] + C
         energyDecay = energyDecayFull/energyDecayFull[0]
@@ -413,13 +402,12 @@ def reverberation_time(decay, nthOct, samplingRate, listEDC):
         y1 = -5
         y2 = y1 - decay
     except ValueError:
-        if decay in ['EDT', 'edt']:
-            y1 = 0
-            y2 = -10
-        else:
+        if decay not in {'EDT', 'edt'}:
             raise ValueError("Decay must be either 'EDT' or an integer \
                              corresponding to the amount of energy decayed to \
                              evaluate, e.g. (decay='20' | 20).")
+        y1 = 0
+        y2 = -10
     RT = []
     for ED in listEDC:
         edc, edv = ED
@@ -462,7 +450,6 @@ def G_Lpe(IR, nthOct, minFreq, maxFreq, IREndManualCut=None):
     #     creation_text = \
     extracted_text = \
         traceback.extract_stack(framenline[0], 1)[0]
-        # traceback.extract_stack(frame, 1)[0]
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
@@ -488,11 +475,17 @@ def G_Lpe(IR, nthOct, minFreq, maxFreq, IREndManualCut=None):
                       maxFreq=maxFreq)
     bands = FOF(nthOct=nthOct,
                 freqRange=[minFreq,maxFreq])[:,1]
-    Lpe = []
-    for chIndex in range(hSignal.numChannels):
-        Lpe.append(
-            10*np.log10(np.trapz(y=hSignal.timeSignal[:,chIndex]**2/(2e-5**2),
-                                 x=hSignal.timeVector)))
+    Lpe = [
+        10
+        * np.log10(
+            np.trapz(
+                y=hSignal.timeSignal[:, chIndex] ** 2 / (2e-5**2),
+                x=hSignal.timeVector,
+            )
+        )
+        for chIndex in range(hSignal.numChannels)
+    ]
+
     LpeAnal = Analysis(anType='mixed', nthOct=nthOct, minBand=float(bands[0]),
                        maxBand=float(bands[-1]), data=Lpe,
                        comment='h**2 energy level')
@@ -689,13 +682,13 @@ def crop_IR(SigObj, IREndManualCut):
     if SigObj.numChannels > 1:
         print('crop_IR: The provided impulsive response has more than one ' +
               'channel. Cropping based on channel 1.')
-    numChannels = 1
     # Cut the end automatically or manual
     if IREndManualCut is None:
         winTimeLength = 0.1  # [s]
         meanSize = 5  # [blocks]
         dBtoReplica = 6  # [dB]
         blockSamples = int(winTimeLength * samplingRate)
+        numChannels = 1
         timeWinData, timeVecWin = _level_profile(timeSignal, samplingRate,
                                                 numSamples, numChannels,
                                                 blockSamples)
@@ -713,11 +706,7 @@ def crop_IR(SigObj, IREndManualCut):
     timeSignal = timeSignal[:endTimeCutIdx]
     # Cut the start automatically
     timeSignal, _ = _circular_time_shift(timeSignal)
-    result = SignalObj(timeSignal,
-                       'time',
-                       samplingRate,
-                       signalType='energy')
-    return result
+    return SignalObj(timeSignal, 'time', samplingRate, signalType='energy')
 
 def analyse(obj, *params,
             bypassLundeby=False,
@@ -816,25 +805,16 @@ def analyse(obj, *params,
     if not isinstance(obj, SignalObj) and not isinstance(obj, ImpulsiveResponse):
         raise TypeError("'obj' must be an one channel SignalObj or" +
                         " ImpulsiveResponse.")
-    if isinstance(obj, ImpulsiveResponse):
-        SigObj = obj.systemSignal
-    else:
-        SigObj = obj
-
+    SigObj = obj.systemSignal if isinstance(obj, ImpulsiveResponse) else obj
     if SigObj.numChannels > 1:
         raise TypeError("'obj' can't contain more than one channel.")
     samplingRate = SigObj.samplingRate
 
     SigObj = crop_IR(SigObj, IREndManualCut)
 
-    calcEDC = False
     result = []
 
-    for param in params:
-        if param in ['RT']:  # 'C', 'D']:
-            calcEDC = True
-            break
-
+    calcEDC = any(param in ['RT'] for param in params)
     if calcEDC:
         listEDC = cumulative_integration(SigObj,
                                          bypassLundeby,

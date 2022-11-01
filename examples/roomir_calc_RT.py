@@ -6,6 +6,7 @@ Created on Sun Sep 13 19:14:51 2020
 @author: mtslazarin
 """
 
+
 # %% Importando bibliotecas
 import pytta
 import os
@@ -57,7 +58,7 @@ TR_inSitu = {}
 for source in [1, 2]:
     for receiver in [1, 2, 3]:
         gc.collect()
-        SR = "S" + str(source) + "-R" + str(receiver)
+        SR = f"S{str(source)}-R{str(receiver)}"
         getRoomres = D_inSitu1.get('roomres', 'Mic1', SR)
         SR = SR.replace('-','')
         RoomirsInSitu1 = D_inSitu1.calculate_ir(getRoomres,
@@ -68,7 +69,7 @@ for source in [1, 2]:
                            skipIndCalibration=skipIndCalibration,
                            skipRegularization=skipRegularization,
                            skipSave=skipSave)
-        
+
         # Plota respostas impulsivas de cada cfg fonte-receptor
         for name, msdThng in RoomirsInSitu1.items():
             print(name)
@@ -76,15 +77,15 @@ for source in [1, 2]:
             #p1 = [IR.plot_freq(ylim=[-10, 120]) for IR in msdThng.measuredSignals]
             p2 = msdThng.measuredSignals[0].plot_freq(xLim=None)
             p3 = msdThng.measuredSignals[0].plot_time_dB(xLim=None)
-            
+
         # Calcula TR
         newTR = MPP.TR(RoomirsInSitu1, 20, IREndManualCut)
-    
+
         if plots:
             _ = newTR[SR][0].plot()
-    
+
         TR_inSitu[SR] = newTR[SR]
-    
+
 # Salva resultados
 TR_inSitu['dictName'] = 'TR_inSitu'
-pytta.save(analysisFileName + ".hdf5", TR_inSitu)
+pytta.save(f"{analysisFileName}.hdf5", TR_inSitu)

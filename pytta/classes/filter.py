@@ -199,8 +199,7 @@ class AntiAliasingFilter(object):
                           'freqMin': self.band[0],
                           'freqMax': self.band[1]}
             output.append(SignalObj(**signalDict))
-        else:
-            return output
+        return output
 
 
 #class SPLWeight(object):
@@ -221,54 +220,58 @@ fc = 1000
 
 
 def __Ra(freq):
-    Ra = (k1**2)*(freq**4) / ((freq**2 + k2**2)
-                              * (((freq**2 + k3**2)
-                              * (freq**2 + k4**2))**0.5)
-                              * (freq**2 + k1**2))
-    return Ra
+    return (
+        (k1**2)
+        * (freq**4)
+        / (
+            (freq**2 + k2**2)
+            * (((freq**2 + k3**2) * (freq**2 + k4**2)) ** 0.5)
+            * (freq**2 + k1**2)
+        )
+    )
 
 def __A(freq):
-    A = round(20*np.log10(__Ra(freq)) - 20*np.log10(__Ra(fc)), 2)
-    return A
+    return round(20*np.log10(__Ra(freq)) - 20*np.log10(__Ra(fc)), 2)
 
 
 def __Rb(freq):
-    Rb = (k1**2)*(freq**3) / ((freq**2 + k2**2)
-                              * ((freq**2 + k5**2)**0.5)
-                              * (freq**2 + k1**2))
-    return Rb
+    return (
+        (k1**2)
+        * (freq**3)
+        / (
+            (freq**2 + k2**2)
+            * ((freq**2 + k5**2) ** 0.5)
+            * (freq**2 + k1**2)
+        )
+    )
 
 
 def __B(freq):
-    B = round(20*np.log10(__Rb(freq)) - 20*np.log10(__Rb(fc)), 2)
-    return B
+    return round(20*np.log10(__Rb(freq)) - 20*np.log10(__Rb(fc)), 2)
 
 
 def __Rc(freq):
-    Rc = (k1**2)*(freq**2) / ((freq**2 + k2**2) * (freq**2 + k1**2))
-    return Rc
+    return (k1**2)*(freq**2) / ((freq**2 + k2**2) * (freq**2 + k1**2))
 
 
 def __C(freq):
-    C = round(20*np.log10(__Rc(freq)) - 20*np.log10(__Rc(fc)), 2)
-    return C
+    return round(20*np.log10(__Rc(freq)) - 20*np.log10(__Rc(fc)), 2)
 
 
 def __h(freq):
-    h = ((1037918.48 - freq**2)**2 + 1080768.16*(freq**2))\
-            / ((9837328 - freq**2)**2 + 11723776*(freq**2))
-    return h
+    return ((1037918.48 - freq**2) ** 2 + 1080768.16 * (freq**2)) / (
+        (9837328 - freq**2) ** 2 + 11723776 * (freq**2)
+    )
 
 
 def __Rd(freq):
-    Rd = (freq / k6**2) * (__h(freq)
-                           / ((freq**2 + k7**2) * (freq**2 + k8**2)))**0.5
-    return Rd
+    return (freq / k6**2) * (
+        __h(freq) / ((freq**2 + k7**2) * (freq**2 + k8**2))
+    ) ** 0.5
 
 
 def __D(freq):
-    D = round(20*np.log10(__Rd(freq)) - 20*np.log10(__Rd(fc)), 2)
-    return D
+    return round(20*np.log10(__Rd(freq)) - 20*np.log10(__Rd(fc)), 2)
 
 
 _categories = ['20', '25', '31.5', '40', '50', '63', '80', '100', '125', '160',
@@ -298,13 +301,10 @@ def weighting(kind='A', nth=None, freqs=None):
     """
     out = []
     if freqs is not None:
-        for freq in freqs:
-            out.append(eval('__' + kind + '(' + freq + ')'))
+        out.extend(eval(f'__{kind}({freq})') for freq in freqs)
     elif nth is not None:
         if nth == 1:
-            for val in _categories[2::3]:
-                out.append(eval('__' + kind + '(' + val + ')'))
+            out.extend(eval(f'__{kind}({val})') for val in _categories[2::3])
         elif nth == 3:
-            for val in _categories:
-                out.append(eval(kind+'('+val+')'))
+            out.extend(eval(f'{kind}({val})') for val in _categories)
     return np.asarray(out, ndmin=2).T

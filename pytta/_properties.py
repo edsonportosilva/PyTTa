@@ -76,7 +76,7 @@ class Default(object):
     def __init__(self):
         """Singleton with properties used accross PyTTa."""
         for name, value in default_.items():
-            vars(self)['_'+name] = value
+            vars(self)[f'_{name}'] = value
         return
 
     def __new__(cls):
@@ -107,11 +107,11 @@ class Default(object):
 
         """
         if name in dir(self) and name != 'device':
-            vars(self)['_'+name] = value
-        elif name in ['device', 'devices']:
+            vars(self)[f'_{name}'] = value
+        elif name in {'device', 'devices'}:
             self.set_defaults(device=value)
         else:
-            raise AttributeError('There is no default settings for ' + repr(name))
+            raise AttributeError(f'There is no default settings for {repr(name)}')
 
     def __call__(self):
         """Good view of attributes."""
@@ -138,12 +138,12 @@ class Default(object):
         """
         for name, value in namevalues.items():  # iterate over the (propertyName = propertyValue) pairs
             try:
-                if vars(self)['_'+name] != value:  # Check if user value are different from the ones already set
+                if vars(self)[f'_{name}'] != value:  # Check if user value are different from the ones already set
                     if name in ['device', 'devices']:  # Check if user is changing default audio IO device
                         sd.default.device = value    # If True, changes the sounddevice default audio IO device
-                        vars(self)['_'+name] = sd.default.device  # Then loads to PyTTa default device
+                        vars(self)[f'_{name}'] = sd.default.device
                     else:
-                        vars(self)['_'+name] = value  # otherwise, assign the new value to the desired property
+                        vars(self)[f'_{name}'] = value
             except KeyError:
                 print('You\'ve probably mispelled something.\n' + 'Checkout the property names:\n')
                 self.__call__()

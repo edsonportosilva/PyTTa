@@ -104,7 +104,7 @@ class _MeasurementChList(ChannelsList):
 
     @kind.setter
     def kind(self, newKind):
-        if newKind == 'in' or newKind == 'out':
+        if newKind in ['in', 'out']:
             self._kind = newKind
         else:
             raise ValueError('Kind must be \'in\' or \'out\'')
@@ -123,13 +123,12 @@ class _MeasurementChList(ChannelsList):
                 raise TypeError('Groups of channels inside the ' +
                                 'groups dict must be contained by' +
                                 ' a tuple.')
-            else:
-                for chNum in group:
-                    if chNum not in self.mapping:
-                        raise ValueError('In group \''+ groupName +
-                                         '\', InChannel number ' + str(chNum) +
-                                         ' isn\'t a valid ' + self.kind +
-                                         'put channel.')
+            for chNum in group:
+                if chNum not in self.mapping:
+                    raise ValueError('In group \''+ groupName +
+                                     '\', InChannel number ' + str(chNum) +
+                                     ' isn\'t a valid ' + self.kind +
+                                     'put channel.')
         self._groups = newComb
 
     # Methods
@@ -156,34 +155,31 @@ class _MeasurementChList(ChannelsList):
                 raise ValueError("Channel number doesn't exist.")
             combChNumList = []
             for comb in self.groups.values():
-                for chNum in comb:
-                    combChNumList.append(chNum)
+                combChNumList.extend(iter(comb))
             return chRef in combChNumList
 
     def get_group_membs(self, chNumUnderCheck, *args):
         # Return a list with channel numbers in ChNumUnderCheck's group
-        if 'rest' in args:
-            rest = 'rest'
-        else:
-            rest = 'entire'
+        rest = 'rest' if 'rest' in args else 'entire'
         othersCombndChs = []
         for comb in self.groups.values():
             if chNumUnderCheck in comb:
                 # Get other ChNums in group
-                for chNum in comb:
-                    if chNum != chNumUnderCheck:
-                        othersCombndChs.append(chNum)
-                    else:
-                        if rest == 'entire':
-                            othersCombndChs.append(chNum)
+                othersCombndChs.extend(
+                    chNum
+                    for chNum in comb
+                    if chNum == chNumUnderCheck
+                    and rest == 'entire'
+                    or chNum != chNumUnderCheck
+                )
+
         return tuple(othersCombndChs)
 
     def get_group_name(self, chNum):
-        # Get chNum's array name
-        for arname, group in self.groups.items():
-            if chNum in group:
-                return arname
-        return None
+        return next(
+            (arname for arname, group in self.groups.items() if chNum in group),
+            None,
+        )
 
     def copy_groups(self, mChList):
         # Copy groups from mChList containing any identical channel to self
@@ -330,7 +326,7 @@ class MeasurementSetup(object):
         self.inCompensations = inCompensations
         self.outChannels = outChannels
         self.outCompensations = outCompensations
-        self.path = getcwd()+'/'+self.name+'/'
+        self.path = f'{getcwd()}/{self.name}/'
         self.modified = False
         self.initing = False
 
@@ -373,21 +369,20 @@ class MeasurementSetup(object):
 
         h5group.create_group('inCompensations')
         for chCode, comp in self.inCompensations.items():
-            h5group.create_group('inCompensations/' + chCode)
-            h5group['inCompensations/' + chCode + '/freq'] = comp[0]
-            h5group['inCompensations/' + chCode + '/dBmag'] = comp[1]
+            h5group.create_group(f'inCompensations/{chCode}')
+            h5group[f'inCompensations/{chCode}/freq'] = comp[0]
+            h5group[f'inCompensations/{chCode}/dBmag'] = comp[1]
 
         h5group.create_group('outCompensations')
         for chCode, comp in self.outCompensations.items():
-            h5group.create_group('outCompensations/' + chCode)
-            h5group['outCompensations/' + chCode + '/freq'] = comp[0]
-            h5group['outCompensations/' + chCode + '/dBmag'] = comp[1]
+            h5group.create_group(f'outCompensations/{chCode}')
+            h5group[f'outCompensations/{chCode}/freq'] = comp[0]
+            h5group[f'outCompensations/{chCode}/dBmag'] = comp[1]
 
         h5group.create_group('excitationSignals')
         for name, excitationSignal in self.excitationSignals.items():
             excitationSignal._h5_save(h5group.create_group('excitationSignals' +
                                                           '/' + name))
-        pass
 
     # Properties
 
@@ -525,27 +520,26 @@ class MeasurementSetup(object):
 
     @inCompensations.setter
     def inCompensations(self, newComps):
-        # if not self.initing:
-        #     raise PermissionError('After a measurement initialization its ' +
-        #                           'inCompensations can\'t be changed.')
-        if isinstance(newComps, dict):
-            for chCode, comp in newComps.items():
-                if chCode not in self.inChannels.codes:
-                    raise NameError("Channel code '{}' in ".format(chCode) +
-                                    "inCompensations isn't a valid input " +
-                                    "transducer.")
-                if not isinstance(comp, tuple):
-                    raise TypeError("inCompensations must be a dict with " +
-                            "channel codes as keys and a tuple containing " +
-                            "the compensation in dB and the frequency vector" +
-                            " as values. Empty dict for no compensation.")
-            self._inCompensations = newComps
-            self.modified = True
-        else:
+        if not isinstance(newComps, dict):
             raise TypeError("inCompensations must be a dict with channel " +
                             "codes as keys and a tuple containing the " +
                             "compensation in dB and the frequency vector as " +
                             "values. Empty dict for no compensation.")
+        for chCode, comp in newComps.items():
+            if chCode not in self.inChannels.codes:
+                raise NameError(
+                    f"Channel code '{chCode}' in "
+                    + "inCompensations isn't a valid input "
+                    + "transducer."
+                )
+
+            if not isinstance(comp, tuple):
+                raise TypeError("inCompensations must be a dict with " +
+                        "channel codes as keys and a tuple containing " +
+                        "the compensation in dB and the frequency vector" +
+                        " as values. Empty dict for no compensation.")
+        self._inCompensations = newComps
+        self.modified = True
 
     @property
     def outChannels(self):
@@ -571,27 +565,26 @@ class MeasurementSetup(object):
 
     @outCompensations.setter
     def outCompensations(self, newComps):
-        # if not self.initing:
-        #     raise PermissionError('After a measurement initialization its ' +
-        #                           'inCompensations can\'t be changed.')
-        if isinstance(newComps, dict):
-            for chCode, comp in newComps.items():
-                if chCode not in self.outChannels.codes:
-                    raise NameError("Channel code '{}' in ".format(chCode) +
-                                    "outCompensations isn't a valid output " +
-                                    "transducer.")
-                if not isinstance(comp, tuple):
-                    raise TypeError("outCompensations must be a dict with " +
-                            "channel codes as keys and a tuple containing " +
-                            "the compensation in dB and the frequency vector" +
-                            " as values. Empty dict for no compensation.")
-            self._outCompensations = newComps
-            self.modified = True
-        else:
+        if not isinstance(newComps, dict):
             raise TypeError("outCompensations must be a dict with channel " +
                             "codes as keys and a tuple containing the " +
                             "compensation in dB and the frequency vector as " +
                             "values. Empty dict for no compensation.")
+        for chCode, comp in newComps.items():
+            if chCode not in self.outChannels.codes:
+                raise NameError(
+                    f"Channel code '{chCode}' in "
+                    + "outCompensations isn't a valid output "
+                    + "transducer."
+                )
+
+            if not isinstance(comp, tuple):
+                raise TypeError("outCompensations must be a dict with " +
+                        "channel codes as keys and a tuple containing " +
+                        "the compensation in dB and the frequency vector" +
+                        " as values. Empty dict for no compensation.")
+        self._outCompensations = newComps
+        self.modified = True
 
     @property
     def path(self):
@@ -659,7 +652,7 @@ class MeasurementData(object):
         # MeasurementData.hdf5 initialization
         if not exists(self.path):
             mkdir(self.path)
-        if exists(self.path + 'MeasurementData.hdf5'):
+        if exists(f'{self.path}MeasurementData.hdf5'):
             raise FileExistsError('ATTENTION!  MeasurementData for the ' +
                                   ' current measurement, ' + self.MS.name +
                                   ', already exists. Load it instead of '
@@ -679,7 +672,7 @@ class MeasurementData(object):
         Method for initializating a brand new MeasurementData.hdf5 file
         """
         # Creating the MeasurementData file
-        with h5py.File(self.path + 'MeasurementData.hdf5', 'w-') as f:
+        with h5py.File(f'{self.path}MeasurementData.hdf5', 'w-') as f:
             f.create_group('MeasurementSetup')
             self.MS._h5_save(f['MeasurementSetup'])
         return
@@ -688,21 +681,21 @@ class MeasurementData(object):
         """
         Method for update MeasurementData.hdf5 with all MeasuredThings in disc.
         """
-        with h5py.File(self.path + 'MeasurementData.hdf5', 'r+') as f:
+        with h5py.File(f'{self.path}MeasurementData.hdf5', 'r+') as f:
             # Updating the MeasuredThings links
             myFiles = [file for file in listdir(self.path) if
                 isfile(join(self.path, file))]
             # Check if all MeasuredThings files are linked
             for myFile in myFiles:
-                if myFile.split('_')[0] in self.MS.measurementKinds:
-                    if myFile.split('.')[0] not in f:
-                        f[myFile] = h5py.ExternalLink(myFile + '.hdf5',
-                                                      '/' + myFile)
+                if (
+                    myFile.split('_')[0] in self.MS.measurementKinds
+                    and myFile.split('.')[0] not in f
+                ):
+                    f[myFile] = h5py.ExternalLink(f'{myFile}.hdf5', f'/{myFile}')
             # Check if all MeasuredThings links' files exist
             for link in list(f):
-                if link + '.hdf5' not in myFiles:
-                    if link != 'MeasurementSetup':
-                        del f[link]
+                if f'{link}.hdf5' not in myFiles and link != 'MeasurementSetup':
+                    del f[link]
         return
 
     def _h5_update_MS(self):
@@ -711,7 +704,7 @@ class MeasurementData(object):
         """
         if self.MS.modified:
             # Updating the MeasurementSetup
-            with h5py.File(self.path + 'MeasurementData.hdf5', 'r+') as f:
+            with h5py.File(f'{self.path}MeasurementData.hdf5', 'r+') as f:
                 del f['MeasurementSetup']
                 f.create_group('MeasurementSetup')
                 self.MS._h5_save(f['MeasurementSetup'])
@@ -723,21 +716,19 @@ class MeasurementData(object):
         Method for update MeasurementData.hdf5 with a new MeasuredThing hdf5
         file link.
         """
-        with h5py.File(self.path + 'MeasurementData.hdf5', 'r+') as f:
+        with h5py.File(f'{self.path}MeasurementData.hdf5', 'r+') as f:
             # Update the MeasurementData.hdf5 file with the MeasuredThing link
-            if newMeasuredThing is not None:
-                if isinstance(newMeasuredThing, MeasuredThing):
-                        fileName = newMeasuredThing.creation_name
-                        if fileName in f:
-                            print('Link already exist. Updating.')
-                            del f[fileName]
-                        f[fileName] = h5py.ExternalLink(fileName + '.hdf5',
-                                                        '/' + fileName)
-                else:
-                    raise TypeError('Only MeasuredThings can be updated to ' +
-                                    'MeasurementData.hdf5')
-            else:
+            if newMeasuredThing is None:
                 print('Skipping _h5_link as no MeasuredThing was provided.')
+            elif isinstance(newMeasuredThing, MeasuredThing):
+                fileName = newMeasuredThing.creation_name
+                if fileName in f:
+                    print('Link already exist. Updating.')
+                    del f[fileName]
+                f[fileName] = h5py.ExternalLink(f'{fileName}.hdf5', f'/{fileName}')
+            else:
+                raise TypeError('Only MeasuredThings can be updated to ' +
+                                'MeasurementData.hdf5')
         return
 
 
@@ -798,7 +789,7 @@ class MeasurementData(object):
                    isfile(join(self.path, f))]
         for file in myfiles:
             if fileName in file:
-                newlasttake = file.replace(fileName + '_', '')
+                newlasttake = file.replace(f'{fileName}_', '')
                 try:
                     newlasttake = int(newlasttake.replace('.hdf5', ''))
                 except ValueError:
@@ -806,7 +797,7 @@ class MeasurementData(object):
                 if newlasttake > lasttake:
                     lasttake = newlasttake
         # Adding the counter to the fileName
-        fileName += '_' + str(lasttake+1)
+        fileName += f'_{str(lasttake + 1)}'
         return fileName
 
     def get(self, *args, skipMsgs=False):
@@ -893,7 +884,7 @@ class MeasurementData(object):
 
         """
         if not skipMsgs:
-            print('Finding the MeasuredThings with {} tags.'.format(args))
+            print(f'Finding the MeasuredThings with {args} tags.')
         # Get MeasuredThings from disc
         myFiles = [f for f in listdir(self.path) if
                    isfile(join(self.path, f))]
@@ -902,19 +893,16 @@ class MeasurementData(object):
         # Filtering files with the provided tags
         filteredFiles = []
         for fileName in myFiles:
-            append = True
-            for arg in args:
-                if arg not in fileName:
-                    append = False
+            append = all(arg in fileName for arg in args)
             if append:
                 filteredFiles.append(fileName)
         if not skipMsgs:
-            print('Found {} matching MeasuredThings'.format(len(filteredFiles)))
+            print(f'Found {len(filteredFiles)} matching MeasuredThings')
         # Retrieving the MeasuredThings
         msdThngs = {}
         for idx, fileName in enumerate(filteredFiles):
             if not skipMsgs:
-                print('Loading match {}: {}'.format(idx+1, fileName))
+                print(f'Loading match {idx + 1}: {fileName}')
             loadedThing = _h5_load(self.path + fileName, skipMsgs=True)
             msdThngName = fileName.split('.')[0]
             msdThngs[msdThngName] = loadedThing[msdThngName]

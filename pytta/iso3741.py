@@ -87,7 +87,6 @@ def Lp_ST(sigObjList, nthOct, minFreq, maxFreq, IRManualCut=None):
     #     creation_text = \
     extracted_text = \
         traceback.extract_stack(framenline[0], 1)[0]
-        # traceback.extract_stack(frame, 1)[0]
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
@@ -95,7 +94,7 @@ def Lp_ST(sigObjList, nthOct, minFreq, maxFreq, IRManualCut=None):
 
     for idx, sigObj in enumerate(sigObjList):
         if not sigObj.channels[firstChNum].calibCheck:
-            raise ValueError("SignalObj {} must be calibrated.".format(idx+1))
+            raise ValueError(f"SignalObj {idx + 1} must be calibrated.")
         # Cutting the IR
         if IRManualCut is not None:
             sigObj.crop(0, IRManualCut)
@@ -108,11 +107,14 @@ def Lp_ST(sigObjList, nthOct, minFreq, maxFreq, IRManualCut=None):
         bands = FOF(nthOct=nthOct,
                     minFreq=minFreq,
                     maxFreq=maxFreq)[:,1]
-        Leq = []
-        for chIndex in range(hSignal.numChannels):
-            Leq.append(
-                10*np.log10(np.mean(hSignal.timeSignal[:,chIndex]**2)/
-                            (2e-5**2)))
+        Leq = [
+            10
+            * np.log10(
+                np.mean(hSignal.timeSignal[:, chIndex] ** 2) / (2e-5**2)
+            )
+            for chIndex in range(hSignal.numChannels)
+        ]
+
         Leq = Analysis(anType='mixed', nthOct=nthOct,
                            minBand=float(bands[0]),
                            maxBand=float(bands[-1]), data=Leq,
@@ -131,10 +133,12 @@ def Lp_ST(sigObjList, nthOct, minFreq, maxFreq, IRManualCut=None):
     data = np.vstack([an.data for an in Leqs])
     Sm = []
     for bandIdx in range(data.shape[1]):
-        summing = 0
-        for idx in range(data.shape[0]):
-            summing += \
-            (data[idx, bandIdx] - Lp_ST.data[bandIdx])**2 / (data.shape[0] - 1)
+        summing = sum(
+            (data[idx, bandIdx] - Lp_ST.data[bandIdx]) ** 2
+            / (data.shape[0] - 1)
+            for idx in range(data.shape[0])
+        )
+
         Sm.append(summing**(1/2))
 
     Lp_ST.error = Sm

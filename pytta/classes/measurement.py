@@ -92,10 +92,11 @@ class _MeasurementBase(_base.PyTTaObj):
                 f'timeLength={self.timeLength!r}')
 
     def _to_dict(self):
-        out = {'device': self.device,
-               'inChannels': self.inChannels._to_dict(),
-               'outChannels': self.outChannels._to_dict()}
-        return out
+        return {
+            'device': self.device,
+            'inChannels': self.inChannels._to_dict(),
+            'outChannels': self.outChannels._to_dict(),
+        }
 
     def _h5_save(self, h5group):
         """
@@ -106,7 +107,6 @@ class _MeasurementBase(_base.PyTTaObj):
         h5group.attrs['outChannels'] = repr(self.outChannels)
         h5group.attrs['blocking'] = self.blocking
         super()._h5_save(h5group)
-        pass
 
 # Measurement Properties
     @property
@@ -365,7 +365,7 @@ class RecMeasure(_MeasurementBase):
 
     def pytta_save(self, dirname=time.ctime(time.time())):
         dic = self._to_dict()
-        name = dirname + '.pytta'
+        name = f'{dirname}.pytta'
         with zipfile.ZipFile(name, 'w') as zdir:
             with open('RecMeasure.json', 'w') as f:
                 json.dump(dic, f, indent=4)
@@ -387,7 +387,6 @@ class RecMeasure(_MeasurementBase):
         h5group.attrs['fftDegree'] = _h5.none_parser(self.fftDegree)
         h5group.attrs['timeLength'] = _h5.none_parser(self.timeLength)
         super()._h5_save(h5group)
-        pass
 
 # Rec Properties
     @property
@@ -567,7 +566,7 @@ class PlayRecMeasure(_MeasurementBase):
         # creation_file, creation_line, creation_function, \
         #     creation_text = \
         extracted_text = \
-            traceback.extract_stack(framenline[0], 1)[0]
+                traceback.extract_stack(framenline[0], 1)[0]
             # traceback.extract_stack(framenline, 1)[0]
         # creation_name = creation_text.split("=")[0].strip()
         creation_name = extracted_text[3].split("=")[0].strip()
@@ -605,7 +604,7 @@ class PlayRecMeasure(_MeasurementBase):
 
     def pytta_save(self, dirname=time.ctime(time.time())):
         dic = self._to_dict()
-        name = dirname + '.pytta'
+        name = f'{dirname}.pytta'
         with zipfile.ZipFile(name, 'w') as zdir:
             excit = self.excitation.pytta_save('excitation')
             dic['excitationAddress'] = excit
@@ -631,7 +630,6 @@ class PlayRecMeasure(_MeasurementBase):
         self.excitation._h5_save(h5group.create_group('excitation'))
         h5group.attrs['outputAmplification'] = self.outputAmplification
         super()._h5_save(h5group)
-        pass
 
 # PlayRec Properties
     @property
@@ -772,7 +770,7 @@ class FRFMeasure(PlayRecMeasure):
 
     def pytta_save(self, dirname=time.ctime(time.time())):
         dic = self._to_dict()
-        name = dirname + '.pytta'
+        name = f'{dirname}.pytta'
         with zipfile.ZipFile(name, 'w') as zdir:
             excit = self.excitation.pytta_save('excitation')
             dic['excitationAddress'] = excit
@@ -800,7 +798,6 @@ class FRFMeasure(PlayRecMeasure):
         h5group.attrs['winSize'] = _h5.none_parser(self.winSize)
         h5group.attrs['overlap'] = _h5.none_parser(self.overlap)
         super()._h5_save(h5group, setClass=False)
-        pass
 
     def run(self):
         """
@@ -840,20 +837,22 @@ class FRFMeasure(PlayRecMeasure):
 def _print_max_level(sigObj, kind, gain=1, mapping=None):
     for chIndex in range(sigObj.numChannels):
         chNum = sigObj.channels.mapping[chIndex]
-        if mapping is not None:
-            chNumMap = mapping[chIndex]
-        else:
-            chNumMap = chNum
+        chNumMap = mapping[chIndex] if mapping is not None else chNum
         # Calculating the final level with a linear gain applied
         linearRmsAmplitude = 10**(sigObj.max_level()[chIndex]/20)
         finalLevel = 20*np.log10(linearRmsAmplitude*gain)
-        print('max {} level (excitation) on channel [{}]: '
-                .format(kind, chNumMap) +
-                '{:.2f} {} - ref.: {} [{}]'
-                .format(finalLevel,
-                        sigObj.channels[chNum].dBName,
-                        sigObj.channels[chNum].dBRef,
-                        sigObj.channels[chNum].unit))
+        print(
+            (
+                f'max {kind} level (excitation) on channel [{chNumMap}]: '
+                + '{:.2f} {} - ref.: {} [{}]'.format(
+                    finalLevel,
+                    sigObj.channels[chNum].dBName,
+                    sigObj.channels[chNum].dBRef,
+                    sigObj.channels[chNum].unit,
+                )
+            )
+        )
+
         if finalLevel >= 0:
             print('\x1b[0;30;43mATENTTION! CLIPPING OCCURRED\x1b[0m')
     return

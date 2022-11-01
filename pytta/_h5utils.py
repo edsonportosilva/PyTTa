@@ -49,14 +49,8 @@ def float_parser(attr):
 
 def none_parser(attr):
     if isinstance(attr, str):
-        if attr == 'None':
-            return None
-        else:
-            return attr
-    if attr is None:
-        return 'None'
-    else:
-        return attr
+        return None if attr == 'None' else attr
+    return 'None' if attr is None else attr
 
 
 def list_w_int_parser(attr):

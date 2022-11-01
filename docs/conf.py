@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('..'))
 
 author = 'João Vitor G. Paes, Matheus Lazarin'
 project = 'PyTTa'
-copyright = '2020, ' + author
+copyright = f'2020, {author}'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1.0'

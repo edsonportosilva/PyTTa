@@ -6,6 +6,7 @@ Created on Sun Sep 13 19:58:51 2020
 @author: mtslazarin
 """
 
+
 # %% Importando bibliotecas
 import pytta
 import os
@@ -74,10 +75,11 @@ for name, res in b.items():
 
 # %% Carrega objeto MeasurementSetup e todas as MeasuredThings
 
-tudo = pytta.roomir._h5_load(MS.name + '/MeasurementData.hdf5')
+tudo = pytta.roomir._h5_load(f'{MS.name}/MeasurementData.hdf5')
 
 # %% Carrega sinais de excitação utilizados
 
-a = pytta.roomir._h5_load(MS.name + '/MeasurementData.hdf5', skip=['MeasuredThing'])
+a = pytta.roomir._h5_load(
+    f'{MS.name}/MeasurementData.hdf5', skip=['MeasuredThing'])
 loadedExcitationSignals = a['MeasurementSetup'].excitationSignals
 loadedExcitationSignals['varredura'].plot_freq()

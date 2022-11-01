@@ -94,7 +94,7 @@ def time(sigObjs, xLabel, yLabel, yLim, xLim, title, decimalSep, timeUnit):
         raise ValueError("'timeUnit' must be the string 's' or 'ms'.")
 
     if xLabel is None:
-        xLabel = 'Time ['+timeUnit+']'
+        xLabel = f'Time [{timeUnit}]'
     if yLabel is None:
         yLabel = 'Amplitude'
     if title is None:
@@ -170,11 +170,10 @@ def _curve_data_extrator_time(sigObjs):
     """
     curveData = []
     for sigObj in sigObjs:
+        x = sigObj.timeVector
         for chIndex in range(sigObj.numChannels):
             chNum = sigObj.channels.mapping[chIndex]
-            label = '{} [{}]'.format(sigObj.channels[chNum].name,
-                                     sigObj.channels[chNum].unit)
-            x = sigObj.timeVector
+            label = f'{sigObj.channels[chNum].name} [{sigObj.channels[chNum].unit}]'
             y = sigObj.timeSignal[:, chIndex]
             curveData.append({
                 'label':label,
@@ -246,7 +245,7 @@ def time_dB(sigObjs, xLabel, yLabel, yLim, xLim, title, decimalSep, timeUnit):
         raise ValueError("'timeUnit' must be the string 's' or 'ms'.")
 
     if xLabel is None:
-        xLabel = 'Time ['+timeUnit+']'
+        xLabel = f'Time [{timeUnit}]'
     if yLabel is None:
         yLabel = 'Magnitude'
     if title is None:
@@ -326,13 +325,12 @@ def _curve_data_extractor_time_dB(sigObjs):
     """
     curveData = []
     for sigObj in sigObjs:
+        x = sigObj.timeVector
         for chIndex in range(sigObj.numChannels):
             chNum = sigObj.channels.mapping[chIndex]
             dBRef = sigObj.channels[chNum].dBRef
-            label = '{} [dB ref.: {} {}]'.format(sigObj.channels[chNum].name,
-                                                 dBRef,
-                                                 sigObj.channels[chNum].unit)
-            x = sigObj.timeVector
+            label = f'{sigObj.channels[chNum].name} [dB ref.: {dBRef} {sigObj.channels[chNum].unit}]'
+
             y = sigObj.timeSignal[:, chIndex]
             curveData.append({
                 'label':label,
@@ -485,10 +483,9 @@ def _curve_data_extractor_freq(sigObjs):
         x = sigObj.freqVector
         for chIndex in range(sigObj.numChannels):
             chNum = sigObj.channels.mapping[chIndex]
-            unitData = '[{} ref.: {} {}]'.format(sigObj.channels[chNum].dBName,
-                                                 sigObj.channels[chNum].dBRef,
-                                                 sigObj.channels[chNum].unit)
-            label = '{} {}'.format(sigObj.channels[chNum].name, unitData)
+            unitData = f'[{sigObj.channels[chNum].dBName} ref.: {sigObj.channels[chNum].dBRef} {sigObj.channels[chNum].unit}]'
+
+            label = f'{sigObj.channels[chNum].name} {unitData}'
             y = sigObj.freqSignal[:, chIndex]
             dBRef = sigObj.channels[chNum].dBRef
             curveData.append({
@@ -564,21 +561,19 @@ def bars(analyses, xLabel, yLabel, yLim, xLim, title, decimalSep, barWidth,
             raise ValueError("'color' must be a list with the same number of " +
                              "elements than analyses.")
     else:
-        color = [None for an in analyses]
+        color = [None for _ in analyses]
 
     if errorStyle == 'laza':
         ecolor='limegreen'
         elinewidth=20
         capsize=0
         capthick=0
-        alpha=.60
     else:
         ecolor='black'
         elinewidth=5
         capsize=10
         capthick=5
-        alpha=.60
-
+    alpha=.60
     if decimalSep == ',':
         locale.setlocale(locale.LC_NUMERIC, 'pt_BR.UTF-8')
         plt.rcParams['axes.formatter.use_locale'] = True
@@ -648,11 +643,9 @@ def bars(analyses, xLabel, yLabel, yLim, xLim, title, decimalSep, barWidth,
                 negativeCounter += 1
     # Sort merged bands
     sortedIdxs = sorted(range(len(allBands)), key=lambda k: allBands[k])
-    sortedList = []
-    for idx in sortedIdxs:
-        sortedList.append(allBands[idx])
+    sortedList = [allBands[idx] for idx in sortedIdxs]
     allBands = np.array(sortedList)
-    
+
     fbar = np.arange(0,len(allBands))
     lowerBand = 0
     higherBand = np.inf
@@ -726,7 +719,7 @@ def bars(analyses, xLabel, yLabel, yLim, xLim, title, decimalSep, barWidth,
     if yLim is None:
         yLim = [np.nanmin(yLims[:,0]), np.nanmax(yLims[:,1])]
     ax.set_ylim(yLim)
-    
+
     ax.grid(color='gray', linestyle='-.', linewidth=0.4)
 
     # ax.set_xticks(fbar+barWidth*(dataSetLen-1)/dataSetLen-
@@ -939,10 +932,9 @@ def _curve_data_extractor_spectrogram(sigObjs):
 
         for chIndex in range(sigObj.numChannels):
             chNum = sigObj.channels.mapping[chIndex]
-            unitData = '[{} ref.: {} {}]'.format(sigObj.channels[chNum].dBName,
-                                                sigObj.channels[chNum].dBRef,
-                                                sigObj.channels[chNum].unit)
-            label = '{} {}'.format(sigObj.channels[chNum].name, unitData)
+            unitData = f'[{sigObj.channels[chNum].dBName} ref.: {sigObj.channels[chNum].dBRef} {sigObj.channels[chNum].unit}]'
+
+            label = f'{sigObj.channels[chNum].name} {unitData}'
             timeSignal = sigObj.timeSignal[:, chIndex]
             dBRef = sigObj.channels[chNum].dBRef
             curveData.append({
@@ -959,7 +951,7 @@ def _curve_data_extractor_spectrogram(sigObjs):
 
 def _calc_spectrogram(timeSignal, timeVector, samplingRate, overlap, winType,
                       winSize, dBRef):
-    window = eval('ss.windows.' + winType)(winSize)
+    window = eval(f'ss.windows.{winType}')(winSize)
     nextIdx = int(winSize*overlap)
     rng = int(timeSignal.shape[0]/winSize/overlap - 1)
     _spectrogram = np.zeros((winSize//2 + 1, rng))

@@ -69,7 +69,7 @@ def freq_to_band(freq: float, nthOct: int, ref: float, base: int) -> int:
         log = np.log2
         factor = 1
     else:
-        raise ValueError(f"freq_to_band: unknown base value.")
+        raise ValueError("freq_to_band: unknown base value.")
     return int(np.round(log(freq / ref) * (nthOct / factor)))
 
 

@@ -162,7 +162,6 @@ def sweep(freqMin=None,
     #     creation_text = \
     extracted_text = \
         traceback.extract_stack(framenline[0], 1)[0]
-        # traceback.extract_stack(frame, 1)[0]
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
@@ -213,7 +212,7 @@ def sweep(freqMin=None,
     sweepTime = sweepSamples/samplingRate  # [s] sweep's time length
     timeVecSweep = np.arange(0, sweepTime, samplingTime)  # [s] time vector
     if timeVecSweep.size > sweepSamples:
-        timeVecSweep = timeVecSweep[0:int(sweepSamples)]  # adjust length
+        timeVecSweep = timeVecSweep[:int(sweepSamples)]
     sweep = 0.95*ss.chirp(timeVecSweep,
                           freqLimits['freqMin'],
                           sweepTime,
@@ -231,7 +230,7 @@ def sweep(freqMin=None,
                                  sweep,
                                  np.zeros(int(stopSamples))))
     if timeSignal.size != numSamples:
-        timeSignal = timeSignal[0:int(numSamples)]  # adjust length
+        timeSignal = timeSignal[:int(numSamples)]
 
     # transforms into a pytta signalObj and sets the correct name
     sweepSignal = SignalObj(signalArray=timeSignal, domain='time',
@@ -271,13 +270,15 @@ def __do_sweep_windowing(inputSweep,
 
     # Uses first half of windowStart, last half of windowEnd, and a vector of
     # ones with the remaining length, in between the half windows
-    fullWindow = np.concatenate((windowStart[0:freqMinSample],
-                                 np.ones(int(len(freqSweep) -
-                                             freqMinSample -
-                                             freqMaxSample + 1)),
-                                 windowEnd[freqMaxSample:-1]))
-    newSweep = fullWindow * inputSweep
-    return newSweep
+    fullWindow = np.concatenate(
+        (
+            windowStart[:freqMinSample],
+            np.ones(int(len(freqSweep) - freqMinSample - freqMaxSample + 1)),
+            windowEnd[freqMaxSample:-1],
+        )
+    )
+
+    return fullWindow * inputSweep
 
 # FIXME: This looks incorrect because the signal has normal
 #        distribution, so no limits but an average and standard deviation.
@@ -373,10 +374,14 @@ def __do_noise_windowing(inputNoise,
     # sample equivalent to the first five percent of noise duration
     fivePercentSample = int((5/100) * (noiseSamples))
     windowStart = ss.hanning(2*fivePercentSample)
-    fullWindow = np.concatenate((windowStart[0:fivePercentSample],
-                                 np.ones(int(noiseSamples-fivePercentSample))))
-    newNoise = fullWindow * inputNoise
-    return newNoise
+    fullWindow = np.concatenate(
+        (
+            windowStart[:fivePercentSample],
+            np.ones(int(noiseSamples - fivePercentSample)),
+        )
+    )
+
+    return fullWindow * inputNoise
 
 
 def impulse(samplingRate=None,
@@ -506,7 +511,6 @@ def measurement(kind='playrec',
     #     creation_text = \
     extracted_text = \
         traceback.extract_stack(framenline[0], 1)[0]
-        # traceback.extract_stack(frame, 1)[0]
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
@@ -548,14 +552,13 @@ def measurement(kind='playrec',
         recordObj.creation_name = creation_name
         return recordObj
 
-# Kind PLAYREC
     elif kind in ['playrec', 'playbackrecord', 'pr']:
         if 'outputAmplification' in kwargs:
             outputAmplification = kwargs.get('outputAmplification')
             kwargs.pop('outputAmplification', None)
         else:
             outputAmplification = 0
-        if ('excitation' in kwargs.keys()) or args:
+        if 'excitation' in kwargs or args:
             signalIn = kwargs.get('excitation') or args[0]
             kwargs.pop('excitation', None)
         else:
@@ -574,7 +577,6 @@ def measurement(kind='playrec',
         playRecObj.creation_name = creation_name
         return playRecObj
 
-# Kind FRF
     elif kind in ['tf', 'frf', 'transferfunction', 'freqresponse']:
         if 'regularization' in kwargs:
             regularization = kwargs.get('regularization')
@@ -632,7 +634,6 @@ def stream(IO='IO',
     #     creation_text = \
     extracted_text = \
         traceback.extract_stack(framenline[0], 1)[0]
-        # traceback.extract_stack(frame, 1)[0]
     # creation_name = creation_text.split("=")[0].strip()
     creation_name = extracted_text[3].split("=")[0].strip()
 
@@ -660,40 +661,27 @@ def stream(IO='IO',
                            *args, **kwargs)
 
     elif IO in ['O', 'out', 'output']:
-        if excit:
-            stream = Streaming(device=device, integration=integration,
-                               outChannels=outChannels, duration=duration,
-                               excitationData=excitData,
-                               samplingRate=samplingRate, callback=callback,
-                               *args, **kwargs)
-        else:
+        if not excit:
             excitation = sweep(samplingRate=samplingRate)
             outChannels = excitation.channels
             duration = excitation.timeLength
             excitData = excitation.timeSignal[:]
-            stream = Streaming(device=device, integration=integration,
-                               outChannels=outChannels, duration=duration,
-                               excitationData=excitData,
-                               samplingRate=samplingRate, callback=callback,
-                               *args, **kwargs)
-
+        stream = Streaming(device=device, integration=integration,
+                           outChannels=outChannels, duration=duration,
+                           excitationData=excitData,
+                           samplingRate=samplingRate, callback=callback,
+                           *args, **kwargs)
     elif IO in ['IO', 'in-out', 'input-output']:
-        if excit:
-            stream = Streaming(device=device, integration=integration,
-                               inChannels=inChannels, outChannels=outChannels,
-                               duration=duration, excitationData=excitData,
-                               samplingRate=samplingRate, callback=callback,
-                               *args, **kwargs)
-        else:
+        if not excit:
             excitation = sweep(samplingRate=samplingRate)
             outChannels = excitation.channels[:]
             duration = excitation.timeLength
             excitData = excitation.timeSignal[:]
-            stream = Streaming(device=device, integration=integration,
-                               inChannels=inChannels, outChannels=outChannels,
-                               duration=duration, excitationData=excitData,
-                               samplingRate=samplingRate, callback=callback,
-                               *args, **kwargs)
+        stream = Streaming(device=device, integration=integration,
+                           inChannels=inChannels, outChannels=outChannels,
+                           duration=duration, excitationData=excitData,
+                           samplingRate=samplingRate, callback=callback,
+                           *args, **kwargs)
     else:
         raise ValueError("The IO parameter could not identify whether the\
                          stream will be Input, Output or Input-Output type.")

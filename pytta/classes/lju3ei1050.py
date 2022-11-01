@@ -111,9 +111,14 @@ class main():
 
 
 def showError(title, info):
-        """
+    """
         Name:showError()
         Desc:Shows an error popup for last exception encountered
         """
-        print(title + ' - ' + str(info) + "\n\nPlease check your " +
-                               "wiring. If you need help, click instructions.")
+    print(
+        (
+            f'{title} - {str(info)}'
+            + "\n\nPlease check your "
+            + "wiring. If you need help, click instructions."
+        )
+    )

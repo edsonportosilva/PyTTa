@@ -39,7 +39,7 @@ class TestPyttaSave(unittest.TestCase):
         savedlst = [sin1, sin2]
         pytta.save(self.filename, sin1, sin2)
         loaded = pytta.load(self.filename)
-        loadedlst = [pyttaobj for pyttaobj in loaded]
+        loadedlst = list(loaded)
         for idx, pobj in enumerate(loadedlst):
             # Testing every attribute
             # SignalObj.timeSignal
@@ -74,7 +74,7 @@ class TestPyttaSave(unittest.TestCase):
         pytta.save(self.filename, IR)
 
         a = pytta.load(self.filename)
-        loadedlst = [pyttaobj for pyttaobj in a]
+        loadedlst = list(a)
         self.assertSequenceEqual(loadedlst[0].systemSignal.timeSignal.tolist(),
                                  IR.systemSignal.timeSignal.tolist())
 
@@ -99,7 +99,7 @@ class TestPyttaSave(unittest.TestCase):
         freqMax2 = 20000
         comment = 'Testing'
         comment2 = 'Testing2'
-        
+
         med1 = pytta.generate.measurement(kind=mType,
                                          samplingRate=samplingRate,
                                          freqMin=freqMin,
@@ -126,7 +126,7 @@ class TestPyttaSave(unittest.TestCase):
 
         a = pytta.load(self.filename)
 
-        loadedlst = [pyttaobj for pyttaobj in a]
+        loadedlst = list(a)
 
         for idx, pobj in enumerate(loadedlst):
             self.assertEqual(pobj.lengthDomain,
@@ -140,10 +140,10 @@ class TestPyttaSave(unittest.TestCase):
 
             self.assertEqual(pobj.device,
                              savedlst[idx].device)
-            
+
             self.assertEqual(str(pobj.inChannels),
                              str(savedlst[idx].inChannels))
-            
+
             self.assertEqual(pobj.samplingRate,
                              savedlst[idx].samplingRate)
 
@@ -152,7 +152,7 @@ class TestPyttaSave(unittest.TestCase):
 
             self.assertEqual(pobj.freqMax,
                              savedlst[idx].freqMax)
-            
+
             self.assertEqual(pobj.comment,
                              savedlst[idx].comment)
 
@@ -187,7 +187,7 @@ class TestPyttaSave(unittest.TestCase):
                                         freqMax=freqMax2,
                                         samplingRate=samplingRate2,
                                         fftDegree=fftDegree2)
-        
+
         med1 = pytta.generate.measurement(kind=mType,
                                         excitation=excitation,
                                         samplingRate=samplingRate,
@@ -214,7 +214,7 @@ class TestPyttaSave(unittest.TestCase):
 
         a = pytta.load(self.filename)
 
-        loadedlst = [pyttaobj for pyttaobj in a]
+        loadedlst = list(a)
 
         for idx, pobj in enumerate(loadedlst):
             self.assertEqual(pobj.lengthDomain,
@@ -225,13 +225,13 @@ class TestPyttaSave(unittest.TestCase):
 
             self.assertEqual(pobj.device,
                             savedlst[idx].device)
-            
+
             self.assertEqual(str(pobj.inChannels),
                             str(savedlst[idx].inChannels))
 
             self.assertEqual(str(pobj.outChannels),
                             str(savedlst[idx].outChannels))
-            
+
             self.assertEqual(pobj.samplingRate,
                             savedlst[idx].samplingRate)
 
@@ -240,97 +240,97 @@ class TestPyttaSave(unittest.TestCase):
 
             self.assertEqual(pobj.freqMax,
                             savedlst[idx].freqMax)
-            
+
             self.assertEqual(pobj.comment,
                             savedlst[idx].comment)
 
 
     def test_pytta_frfmeasure(self):
-            """
+        """
             FRFMeasure pytta save test
             """
-            mType = 'frf'
-            fftDegree = 18
-            fftDegree2 = 19
-            device = 4
-            device2 = 3
-            inChannels = [1,2,3,4]
-            inChannels2 = [1,5,3,7]
-            outChannels = [1,2]
-            outChannels2 = [1,3]
-            samplingRate = 44100
-            samplingRate2 = 48000
-            freqMin = 22
-            freqMin2 = 20
-            freqMax = 19222
-            freqMax2 = 20000
-            comment = 'Testing'
-            comment2 = 'Testing2'
-            excitation = pytta.generate.sweep(freqMin=freqMin,
-                                            freqMax=freqMax,
-                                            samplingRate=samplingRate,
-                                            fftDegree=fftDegree)
+        mType = 'frf'
+        fftDegree = 18
+        fftDegree2 = 19
+        device = 4
+        device2 = 3
+        inChannels = [1,2,3,4]
+        inChannels2 = [1,5,3,7]
+        outChannels = [1,2]
+        outChannels2 = [1,3]
+        samplingRate = 44100
+        samplingRate2 = 48000
+        freqMin = 22
+        freqMin2 = 20
+        freqMax = 19222
+        freqMax2 = 20000
+        comment = 'Testing'
+        comment2 = 'Testing2'
+        excitation = pytta.generate.sweep(freqMin=freqMin,
+                                        freqMax=freqMax,
+                                        samplingRate=samplingRate,
+                                        fftDegree=fftDegree)
 
-            excitation2 = pytta.generate.sweep(freqMin=freqMin2,
-                                            freqMax=freqMax2,
-                                            samplingRate=samplingRate2,
-                                            fftDegree=fftDegree2)
-            
-            med1 = pytta.generate.measurement(kind=mType,
-                                            excitation=excitation,
-                                            samplingRate=samplingRate,
-                                            freqMin=freqMin,
-                                            freqMax=freqMax,
-                                            device=device,
-                                            inChannels=inChannels,
-                                            outChannels=outChannels,
-                                            comment=comment)
+        excitation2 = pytta.generate.sweep(freqMin=freqMin2,
+                                        freqMax=freqMax2,
+                                        samplingRate=samplingRate2,
+                                        fftDegree=fftDegree2)
 
-            med2 = pytta.generate.measurement(kind=mType,
-                                            excitation=excitation2,
-                                            samplingRate=samplingRate2,
-                                            freqMin=freqMin2,
-                                            freqMax=freqMax2,
-                                            device=device2,
-                                            inChannels=inChannels2,
-                                            outChannels=outChannels2,
-                                            comment=comment2) 
+        med1 = pytta.generate.measurement(kind=mType,
+                                        excitation=excitation,
+                                        samplingRate=samplingRate,
+                                        freqMin=freqMin,
+                                        freqMax=freqMax,
+                                        device=device,
+                                        inChannels=inChannels,
+                                        outChannels=outChannels,
+                                        comment=comment)
 
-            savedlst = [med1, med2]
+        med2 = pytta.generate.measurement(kind=mType,
+                                        excitation=excitation2,
+                                        samplingRate=samplingRate2,
+                                        freqMin=freqMin2,
+                                        freqMax=freqMax2,
+                                        device=device2,
+                                        inChannels=inChannels2,
+                                        outChannels=outChannels2,
+                                        comment=comment2) 
 
-            pytta.save(self.filename, med1, med2)
+        savedlst = [med1, med2]
 
-            a = pytta.load(self.filename)
+        pytta.save(self.filename, med1, med2)
 
-            loadedlst = [pyttaobj for pyttaobj in a]
+        a = pytta.load(self.filename)
 
-            for idx, pobj in enumerate(loadedlst):
-                self.assertEqual(pobj.lengthDomain,
-                                savedlst[idx].lengthDomain)
+        loadedlst = list(a)
 
-                self.assertEqual(pobj.excitation.timeSignal.tolist(),
-                                savedlst[idx].excitation.timeSignal.tolist())
+        for idx, pobj in enumerate(loadedlst):
+            self.assertEqual(pobj.lengthDomain,
+                            savedlst[idx].lengthDomain)
 
-                self.assertEqual(pobj.device,
-                                savedlst[idx].device)
-                
-                self.assertEqual(str(pobj.inChannels),
-                                str(savedlst[idx].inChannels))
+            self.assertEqual(pobj.excitation.timeSignal.tolist(),
+                            savedlst[idx].excitation.timeSignal.tolist())
 
-                self.assertEqual(str(pobj.outChannels),
-                                str(savedlst[idx].outChannels))
-                
-                self.assertEqual(pobj.samplingRate,
-                                savedlst[idx].samplingRate)
+            self.assertEqual(pobj.device,
+                            savedlst[idx].device)
 
-                self.assertEqual(pobj.freqMin,
-                                savedlst[idx].freqMin)
+            self.assertEqual(str(pobj.inChannels),
+                            str(savedlst[idx].inChannels))
 
-                self.assertEqual(pobj.freqMax,
-                                savedlst[idx].freqMax)
-                
-                self.assertEqual(pobj.comment,
-                                savedlst[idx].comment)
+            self.assertEqual(str(pobj.outChannels),
+                            str(savedlst[idx].outChannels))
+
+            self.assertEqual(pobj.samplingRate,
+                            savedlst[idx].samplingRate)
+
+            self.assertEqual(pobj.freqMin,
+                            savedlst[idx].freqMin)
+
+            self.assertEqual(pobj.freqMax,
+                            savedlst[idx].freqMax)
+
+            self.assertEqual(pobj.comment,
+                            savedlst[idx].comment)
 
 
 if __name__ == '__main__':

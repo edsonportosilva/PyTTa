@@ -109,7 +109,7 @@ class TestH5IO(unittest.TestCase):
         freqMax2 = 20000
         comment = 'Testing'
         comment2 = 'Testing2'
-        
+
         med1 = pytta.generate.measurement(kind=mType,
                                          samplingRate=samplingRate,
                                          freqMin=freqMin,
@@ -150,10 +150,10 @@ class TestH5IO(unittest.TestCase):
 
             self.assertEqual(pobj.device,
                              savedlst[idx].device)
-            
+
             self.assertEqual(str(pobj.inChannels),
                              str(savedlst[idx].inChannels))
-            
+
             self.assertEqual(pobj.samplingRate,
                              savedlst[idx].samplingRate)
 
@@ -162,7 +162,7 @@ class TestH5IO(unittest.TestCase):
 
             self.assertEqual(pobj.freqMax,
                              savedlst[idx].freqMax)
-            
+
             self.assertEqual(pobj.comment,
                              savedlst[idx].comment)
 
@@ -197,7 +197,7 @@ class TestH5IO(unittest.TestCase):
                                             freqMax=freqMax2,
                                             samplingRate=samplingRate2,
                                             fftDegree=fftDegree2)
-            
+
             med1 = pytta.generate.measurement(kind=mType,
                                             excitation=excitation,
                                             samplingRate=samplingRate,
@@ -235,13 +235,13 @@ class TestH5IO(unittest.TestCase):
 
                 self.assertEqual(pobj.device,
                                 savedlst[idx].device)
-                
+
                 self.assertEqual(str(pobj.inChannels),
                                 str(savedlst[idx].inChannels))
 
                 self.assertEqual(str(pobj.outChannels),
                                 str(savedlst[idx].outChannels))
-                
+
                 self.assertEqual(pobj.samplingRate,
                                 savedlst[idx].samplingRate)
 
@@ -250,7 +250,7 @@ class TestH5IO(unittest.TestCase):
 
                 self.assertEqual(pobj.freqMax,
                                 savedlst[idx].freqMax)
-                
+
                 self.assertEqual(pobj.comment,
                                 savedlst[idx].comment)
 
@@ -285,7 +285,7 @@ class TestH5IO(unittest.TestCase):
                                             freqMax=freqMax2,
                                             samplingRate=samplingRate2,
                                             fftDegree=fftDegree2)
-            
+
             med1 = pytta.generate.measurement(kind=mType,
                                             excitation=excitation,
                                             samplingRate=samplingRate,
@@ -323,13 +323,13 @@ class TestH5IO(unittest.TestCase):
 
                 self.assertEqual(pobj.device,
                                 savedlst[idx].device)
-                
+
                 self.assertEqual(str(pobj.inChannels),
                                 str(savedlst[idx].inChannels))
 
                 self.assertEqual(str(pobj.outChannels),
                                 str(savedlst[idx].outChannels))
-                
+
                 self.assertEqual(pobj.samplingRate,
                                 savedlst[idx].samplingRate)
 
@@ -338,7 +338,7 @@ class TestH5IO(unittest.TestCase):
 
                 self.assertEqual(pobj.freqMax,
                                 savedlst[idx].freqMax)
-                
+
                 self.assertEqual(pobj.comment,
                                 savedlst[idx].comment)
 
@@ -416,7 +416,7 @@ class TestH5IO(unittest.TestCase):
 
             self.assertEqual(pobj.minBand,
                             savedlst[idx].minBand)
-            
+
             self.assertEqual(pobj.maxBand,
                             savedlst[idx].maxBand)
 

@@ -5,6 +5,7 @@ Created on Sun Jun 23 15:08:25 2019
 
 @author: mtslazarin
 """
+
 # %% Initializating
 
 import pytta
@@ -35,9 +36,8 @@ MS, D = rmr.med_load('med-teste')
 
 # %% Carrega sinais de excitação e cria dicionário para o setup da medição
 
-excitationSignals = {}
-excitationSignals['varredura18'] = pytta.generate.sweep(
-        # Geração do sweep (também pode ser carregado projeto prévio)
+excitationSignals = {
+    'varredura18': pytta.generate.sweep(
         freqMin=20,
         freqMax=20000,
         fftDegree=18,
@@ -45,7 +45,9 @@ excitationSignals['varredura18'] = pytta.generate.sweep(
         stopMargin=3,
         method='logarithmic',
         windowing='hann',
-        samplingRate=44100)
+        samplingRate=44100,
+    )
+}
 
 excitationSignals['varredura17'] = pytta.generate.sweep(
         # Geração do sweep (também pode ser carregado projeto prévio)
@@ -101,7 +103,7 @@ MS = rmr.MeasurementSetup(name='med-teste',  # Nome da medição
                           noiseFloorTp=5,  # [s] tempo de gravação do ruído de fundo
                           calibrationTp=2,  # [s] tempo de gravação do sinal de calibração
                           excitationSignals=excitationSignals,  # Sinais de excitação
-                          
+
                           # Número de médias por tomada de medição: para grande
                           # número de médias recomenda-se dividí-las em algumas
                           # tomadas distintas.
@@ -109,7 +111,7 @@ MS = rmr.MeasurementSetup(name='med-teste',  # Nome da medição
                           pause4Avg=False,  # Pausa entre as médias
                           freqMin=20,  # [Hz]
                           freqMax=20000,  # [Hz]
-                          
+
                           # Dicionário com canais de saída, códigos associados
                           # e grupos de canal (arranjos)
                           inChannels={'OE': (4, 'Orelha E'),
@@ -121,7 +123,7 @@ MS = rmr.MeasurementSetup(name='med-teste',  # Nome da medição
                           # associadas à cadeia de entrada
                           # inCompensations={'Mic1': (mSensFreq, mSensdBMag)},
                           inCompensations={},
-                          
+
                           # Dicionário com códigos e canais de saída associados
                           outChannels={'O1': (1, 'Dodecaedro 1'),
                                        'O2': (2, 'Dodecaedro 2'),

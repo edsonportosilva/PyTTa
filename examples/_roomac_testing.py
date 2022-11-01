@@ -10,7 +10,7 @@ import numpy as np
 from timeit import timeit
 
 # %% Loading IR
-path = pytta.__path__[0] + '/examples/RIS/'
+path = f'{pytta.__path__[0]}/examples/RIS/'
 file = 'scene9_RIR_LS1_MP1_Dodecahedron.wav'
 myarr = pytta.read_wav(path+file)
 
